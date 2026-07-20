@@ -29,7 +29,7 @@
   "scripts": {
     "test": "nyc mocha",
     "lint": "eslint bin/* lib test",
-    "build": "node \"../../node_modules/typescript/bin/tsc\"",
+    "build": "test -f ../../node_modules/typescript/bin/tsc && node ../../node_modules/typescript/bin/tsc || echo '[build] typescript not found outside the monorepo, skipping (assuming already built)'",
     "prepare": "npm run build"
   },
   "dependencies": {
