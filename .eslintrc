@@ -199,17 +199,10 @@
       }
     },
     {
-      // Specific rules for test files (TypeScript)
-      files: [ "packages/**/test/**/*-test.ts" ],
-      parserOptions: {
-        project: "./tsconfig.test.json"
-      },
-      rules: {
-        "import/no-extraneous-dependencies": "off"
-      }
-    },
-    {
-      // TypeScript source files
+      // TypeScript source files. Must come before the test-file TS override
+      // below: ESLint's `overrides` cascade applies later-array entries last,
+      // and both blocks match *-test.ts files, so declaration order controls
+      // which `parserOptions.project` wins for test files.
       files: [ "packages/**/*.ts" ],
       parser: "@typescript-eslint/parser",
       parserOptions: {
@@ -224,6 +217,17 @@
         // The TS compiler already catches undefined references, and this rule
         // otherwise misfires on TS-only constructs (interfaces, type imports).
         "no-undef": "off"
+      }
+    },
+    {
+      // Specific rules for test files (TypeScript). Comes after the general
+      // TS override above so its tsconfig.test.json project setting wins.
+      files: [ "packages/**/test/**/*-test.ts" ],
+      parserOptions: {
+        project: "./tsconfig.test.json"
+      },
+      rules: {
+        "import/no-extraneous-dependencies": "off"
       }
     }
   ]

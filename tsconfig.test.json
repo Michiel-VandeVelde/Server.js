@@ -12,6 +12,12 @@
     "test/**/*.ts",
     "types/**/*.d.ts"
   ],
+  "exclude": [
+    "**/node_modules",
+    "packages/*/index.d.ts",
+    "packages/*/lib/**/*.d.ts",
+    "packages/*/bin/**/*.d.ts"
+  ],
   "ts-node": {
     "files": true
   }
