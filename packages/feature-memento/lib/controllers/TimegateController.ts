@@ -1,30 +1,34 @@
 /*! @license MIT ©2015-2016 Miel Vander Sande, Ghent University - imec */
 /* An TimegateController responds to timegate requests */
 
-let Controller = require('@ldf/core').controllers.Controller,
-    _ = require('lodash'),
-    url = require('url'),
-    Util = require('@ldf/core').Util;
+import LdfCore = require('@ldf/core');
+import _ = require('lodash');
+import url = require('url');
+
+const Controller = LdfCore.controllers.Controller;
+const Util = LdfCore.Util;
 
 // Creates a new TimegateController
 class TimegateController extends Controller {
-  constructor(options) {
+  [key: string]: any;
+
+  constructor(options?: any) {
     options = options || {};
     super(options);
     this._first = true;
 
     // Settings for timegate
     let timegates = options.timegates || {};
-    this._timemaps = TimegateController.parseTimegateMap(timegates.mementos);
+    this._timemaps = (TimegateController as any).parseTimegateMap(timegates.mementos);
 
     // Set up path matching
     this._timegatePath = timegates.baseUrl || '/timegate/',
     this._matcher = new RegExp('^' + Util.toRegExp(this._timegatePath) + '(.+?)\/?(?:\\?.*)?$');
   }
 
-  static parseTimegateMap(mementos) {
-    return _.mapValues(mementos, (mementos) => {
-      return sortTimemap(mementos.map((memento) => {
+  static parseTimegateMap(mementos: any) {
+    return _.mapValues(mementos, (mementos: any) => {
+      return sortTimemap(mementos.map((memento: any) => {
         return {
           datasource: memento.datasource,
           datasourceId: memento.datasource.id,
@@ -35,11 +39,11 @@ class TimegateController extends Controller {
     });
   }
 
-  static parseInvertedTimegateMap(mementos, urlData) {
-    let timemaps = TimegateController.parseTimegateMap(mementos);
-    let invertedTimegateMap = {};
-    _.forIn(timemaps, (versions, timeGateId) => {
-      versions.forEach((version) => {
+  static parseInvertedTimegateMap(mementos: any, urlData: any) {
+    let timemaps = (TimegateController as any).parseTimegateMap(mementos);
+    let invertedTimegateMap: any = {};
+    _.forIn(timemaps, (versions: any, timeGateId: any) => {
+      versions.forEach((version: any) => {
         invertedTimegateMap[version.datasourceId] = {
           memento: timeGateId,
           original: version.original || (urlData.baseURL || '/') + timeGateId,
@@ -51,7 +55,7 @@ class TimegateController extends Controller {
   }
 
   // Perform time negotiation if applicable
-  _handleRequest(request, response, next) {
+  override _handleRequest(request: any, response: any, next: any) {
     let timegateMatch = this._matcher.exec(request.url),
         datasource = timegateMatch && timegateMatch[1],
         timemapDetails = datasource && this._timemaps[datasource];
@@ -108,7 +112,7 @@ class TimegateController extends Controller {
       ];
       get_closest_memento(timemap, "2011-10-20T12:22:24Z", false);
   */
-  _getClosestMemento(timemap, acceptDatetime, unsorted) {
+  _getClosestMemento(timemap: any, acceptDatetime: any, unsorted?: any) {
     // NOTE: assuming that the interval is always specified as [start_date, end_date]
     // empty timemap can't give any mementos
     if (timemap.length === 0)
@@ -147,16 +151,15 @@ class TimegateController extends Controller {
 
 
 // Sort the timemap by interval start date
-function sortTimemap(timemap) {
-  return timemap.sort((a, b) => {
+function sortTimemap(timemap: any) {
+  return timemap.sort((a: any, b: any) => {
     return a.interval[0].getTime() - b.interval[0].getTime();
   });
 }
 
 // Convert the value to a date
-function toDate(value) {
+function toDate(value: any) {
   return typeof value === 'string' ? new Date(value) : (value || new Date());
 }
 
-
-module.exports = TimegateController;
+export = TimegateController;

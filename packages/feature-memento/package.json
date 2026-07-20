@@ -5,14 +5,17 @@
   "lsd:module": true,
   "license": "MIT",
   "main": "index.js",
+  "types": "index",
   "publishConfig": {
     "access": "public"
   },
   "files": [
     "components",
     "lib/**/*.js",
+    "lib/**/*.d.ts",
     "lib/**/*.html",
-    "index.js"
+    "index.js",
+    "index.d.ts"
   ],
   "repository": "https://github.com/LinkedDataFragments/Server.js/tree/master/packages/feature-memento",
   "bugs": {
@@ -20,7 +23,9 @@
   },
   "scripts": {
     "test": "nyc mocha",
-    "lint": "eslint bin/* lib test"
+    "lint": "eslint bin/* lib test",
+    "build": "node \"../../node_modules/typescript/bin/tsc\"",
+    "prepare": "npm run build"
   },
   "dependencies": {
     "lodash": "^4.0.0"
@@ -30,5 +35,8 @@
   },
   "devDependencies": {
     "@ldf/core": "^3.2.1"
+  },
+  "engines": {
+    "node": ">=18.0"
   }
 }

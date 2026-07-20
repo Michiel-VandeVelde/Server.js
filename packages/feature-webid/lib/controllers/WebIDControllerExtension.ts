@@ -1,26 +1,30 @@
 /*! @license MIT ©2016 Miel Vander Sande, Ghent University - imec */
 /* A WebIDControllerExtension extends Triple Pattern Fragments responses with WebID authentication. */
 
-let http = require('http'),
-    lru = require('lru-cache'),
-    parseCacheControl = require('parse-cache-control'),
-    N3 = require('n3'),
-    n3parser = N3.Parser,
-    Util = require('@ldf/core').Util,
-    Controller = require('@ldf/core').controllers.Controller;
+import * as http from 'http';
+import lru = require('lru-cache');
+import parseCacheControl = require('parse-cache-control');
+import * as N3 from 'n3';
+import LdfCore = require('@ldf/core');
+
+const n3parser: any = N3.Parser;
+const Util = LdfCore.Util;
+const Controller = LdfCore.controllers.Controller;
 
 let CERT_NS = 'http://www.w3.org/ns/auth/cert#';
 
 // Creates a new WebIDControllerExtensionsl
 class WebIDControllerExtension extends Controller {
-  constructor(settings) {
+  [key: string]: any;
+
+  constructor(settings: any) {
     super(settings);
-    this._cache = lru(50);
+    this._cache = (lru as any)(50);
     this._protocol = settings.urlData.protocol;
   }
 
   // Add WebID Link headers
-  _handleRequest(request, response, next, settings) {
+  override _handleRequest(request: any, response: any, next: any, settings: any) {
     // Get WebID from certificate
     if (this._protocol !== 'https') // This WebID implementation requires HTTPS
       return next();
@@ -36,7 +40,7 @@ class WebIDControllerExtension extends Controller {
 
     let webID = certificate.subject.subjectAltName.replace('uniformResourceIdentifier:', '');
     this._verifyWebID(webID, certificate.modulus, parseInt(certificate.exponent, 16),
-      (error, verified, reason) => {
+      (error: any, verified: any, reason: any) => {
         if (!verified) {
           return self._handleForbidden(request, response, {
             webID: webID,
@@ -48,13 +52,13 @@ class WebIDControllerExtension extends Controller {
   }
 
   // Verify webID
-  _verifyWebID(webID, modulus, exponent, callback) {
+  _verifyWebID(webID: any, modulus: any, exponent: any, callback: any) {
     // request & parse
     let parser = n3parser(),
-        id = {};
+        id: any = {};
 
     // parse webID
-    function parseTriple(error, triple, prefixes) {
+    function parseTriple(error: any, triple: any, prefixes: any) {
       if (error)
         callback('Cannot parse WebID: ' + error);
       else if (triple) {
@@ -73,7 +77,7 @@ class WebIDControllerExtension extends Controller {
       }
     }
 
-    function verify(m, e) {
+    function verify(m: any, e: any) {
       if (m && m === modulus && e && e === exponent)
         callback(null, true);
       else
@@ -86,19 +90,19 @@ class WebIDControllerExtension extends Controller {
     if (cachedId)
       verify(cachedId.modulus, cachedId.exponent);
     else {
-      let req = http.request(webID, (res) => {
+      let req = http.request(webID as any, (res: any) => {
         res.setEncoding('utf8');
 
         parser.parse(res, parseTriple);
 
         res.on('end', () => {
-          let cacheControl = parseCacheControl(res.headers['Cache-Control'] || '');
+          let cacheControl: any = parseCacheControl(res.headers['Cache-Control'] || '');
           this._cache.set(webID, id, cacheControl['max-age'] || 0);
           verify(id.modulus, id.exponent);
         });
       });
 
-      req.on('error', (e) => {
+      req.on('error', (e: any) => {
         callback(null, false, 'Unabled to download ' + webID + ' (' + e.message + ').');
       });
 
@@ -106,7 +110,7 @@ class WebIDControllerExtension extends Controller {
     }
   }
 
-  _handleForbidden(request, response, options) {
+  _handleForbidden(request: any, response: any, options: any) {
     // Render the 404 message using the appropriate view
     let view = this._negotiateView('Forbidden', request, response),
         metadata = {
@@ -119,7 +123,7 @@ class WebIDControllerExtension extends Controller {
     view.render(metadata, request, response);
   }
 
-  _handleNotAcceptable(request, response, options) {
+  override _handleNotAcceptable(request: any, response: any, options: any) {
     response.writeHead(401, {
       'Content-Type': Util.MIME_PLAINTEXT,
     });
@@ -127,4 +131,4 @@ class WebIDControllerExtension extends Controller {
   }
 }
 
-module.exports = WebIDControllerExtension;
+export = WebIDControllerExtension;

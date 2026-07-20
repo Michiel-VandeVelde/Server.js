@@ -1,15 +1,19 @@
 /*! @license MIT ©2015-2016 Miel Vander Sande, Ghent University - imec */
 /* An SummaryController responds to requests for summaries */
 
-let Controller = require('@ldf/core').controllers.Controller,
-    fs = require('fs'),
-    path = require('path'),
-    StreamParser = require('n3').StreamParser,
-    Util = require('@ldf/core').Util;
+import LdfCore = require('@ldf/core');
+import * as fs from 'fs';
+import * as path from 'path';
+import { StreamParser } from 'n3';
+
+const Controller = LdfCore.controllers.Controller;
+const Util = LdfCore.Util;
 
 // Creates a new SummaryController
 class SummaryController extends Controller {
-  constructor(options) {
+  [key: string]: any;
+
+  constructor(options?: any) {
     options = options || {};
     super(options);
     // Settings for data summaries
@@ -21,7 +25,7 @@ class SummaryController extends Controller {
     this._matcher = new RegExp('^' + Util.toRegExp(this._summariesPath) + '(.+)$');
   }
 
-  _handleRequest(request, response, next) {
+  override _handleRequest(request: any, response: any, next: any) {
     if (!this._enabled)
       return next();
 
@@ -30,12 +34,12 @@ class SummaryController extends Controller {
       let summaryFile = path.join(this._summariesFolder, datasource + '.ttl');
 
       // Read summary triples from file
-      let streamParser = new StreamParser({ blankNodePrefix: '', baseIRI: this._baseUrl.pathname }),
+      let streamParser = new StreamParser({ blankNodePrefix: '', baseIRI: this._baseUrl.pathname } as any),
           inputStream = fs.createReadStream(summaryFile);
 
       // If the summary cannot be read, invoke the next controller without error
-      inputStream.on('error', (error) => { next(); });
-      inputStream.pipe(streamParser);
+      inputStream.on('error', (error: any) => { next(); });
+      inputStream.pipe(streamParser as any);
 
       // Set caching
       response.setHeader('Cache-Control', 'public,max-age=604800'); // 14 days
@@ -49,4 +53,4 @@ class SummaryController extends Controller {
   }
 }
 
-module.exports = SummaryController;
+export = SummaryController;

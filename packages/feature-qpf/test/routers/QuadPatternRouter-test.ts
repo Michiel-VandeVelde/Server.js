@@ -1,6 +1,9 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
-let QuadPatternRouter = require('../../').routers.QuadPatternRouter;
-const dataFactory = require('n3').DataFactory;
+import ThisPackage = require('../../');
+import * as N3 from 'n3';
+
+const QuadPatternRouter = ThisPackage.routers.QuadPatternRouter;
+const dataFactory = N3.DataFactory;
 
 describe('QuadPatternRouter', () => {
   describe('The QuadPatternRouter module', () => {
@@ -223,7 +226,7 @@ describe('QuadPatternRouter', () => {
             { a: 1, features: { quadPattern: true }, graph: dataFactory.defaultGraph() },
           ],
         ]
-          .forEach((args) => { test.extractQueryParams.apply(router, args); });
+          .forEach((args) => { (test as any).extractQueryParams.apply(router, args); });
       });
     });
   });
@@ -465,7 +468,7 @@ describe('QuadPatternRouter', () => {
             { a: 1, features: { quadPattern: true }, graph: dataFactory.namedNode('foo:bar') },
           ],
         ]
-          .forEach((args) => { test.extractQueryParams.apply(router, args); });
+          .forEach((args) => { (test as any).extractQueryParams.apply(router, args); });
       });
     });
   });

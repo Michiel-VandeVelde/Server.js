@@ -1,24 +1,26 @@
 /*! @license MIT ©2015-2017 Ruben Verborgh and Ruben Taelman, Ghent University - imec */
 /* A QuadPatternFragmentsRdfView represents a TPF or QPF in HTML. */
 
-let HtmlView = require('@ldf/core').views.HtmlView,
-    join = require('path').join;
+import LdfCore = require('@ldf/core');
+import { join } from 'path';
+
+const HtmlView = LdfCore.views.HtmlView;
 
 // Creates a new QuadPatternFragmentsHtmlView
 class QuadPatternFragmentsHtmlView extends HtmlView {
-  constructor(settings) {
+  constructor(settings?: any) {
     super('QuadPatternFragments', settings);
 
     this.viewDirectory = __dirname;
   }
 
   // Renders the view with the given settings to the response
-  _render(settings, request, response, done) {
+  override _render(settings: any, request: any, response: any, done: any) {
     // Read the data and metadata
-    let self = this, quads = settings.quads = [], results = settings.results;
-    results.on('data', (triple) => { quads.push(triple); });
+    let self = this, quads: any[] = settings.quads = [], results = settings.results;
+    results.on('data', (triple: any) => { quads.push(triple); });
     results.on('end',  () => { settings.metadata && renderHtml(); });
-    results.getProperty('metadata', (metadata) => {
+    results.getProperty('metadata', (metadata: any) => {
       settings.metadata = metadata;
       results.ended && renderHtml();
     });
@@ -32,4 +34,4 @@ class QuadPatternFragmentsHtmlView extends HtmlView {
   }
 }
 
-module.exports = QuadPatternFragmentsHtmlView;
+export = QuadPatternFragmentsHtmlView;

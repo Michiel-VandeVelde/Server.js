@@ -21,5 +21,8 @@
   "scripts": {
     "test": "nyc mocha",
     "lint": "eslint bin/* lib test"
+  },
+  "engines": {
+    "node": ">=18.0"
   }
 }

@@ -1,7 +1,7 @@
 /*! @license MIT ©2014–17 Ruben Verborgh and Ruben Taelman, Ghent University - imec */
 /** A QuadPatternRouter routes basic quad patterns */
 
-const stringToTerm = require('rdf-string').stringToTerm;
+import { stringToTerm } from 'rdf-string';
 
 let iriMatcher = /^(<?)([^_?$"<>][^"<>]*)>?$/;
 let literalMatcher = /^("[^]*")(?:|\^\^<?([^"<>]+)>?|@[a-z0-9\-]+)$/i;
@@ -14,15 +14,18 @@ let DEFAULT_GRAPH_ALT = '@default';
 
 // Creates a new QuadPatternRouter
 class QuadPatternRouter {
-  constructor(config) {
+  private _prefixes: any;
+  private dataFactory: any;
+
+  constructor(config: any) {
     this._prefixes = config.prefixes || {};
     this.dataFactory = config.dataFactory;
   }
 
   // Extracts triple or quad pattern parameters from the request and add them to the query
-  extractQueryParams(request, query) {
+  extractQueryParams(request: any, query: any) {
     let queryString = request.url && request.url.query, match,
-        hasTriplePattern = false, hasQuadPattern = false;
+        hasTriplePattern: any = false, hasQuadPattern: any = false;
 
     // Try to extract a subject IRI
     if (queryString.subject && (match = iriMatcher.exec(queryString.subject)))
@@ -62,10 +65,10 @@ class QuadPatternRouter {
   }
 
   // Expands a prefixed named into a full IRI
-  _expandIRI(name) {
+  _expandIRI(name: any) {
     let match = prefixedNameMatcher.exec(name), prefix;
     return match && (prefix = this._prefixes[match[1]]) ? prefix + match[2] : name;
   }
 }
 
-module.exports = QuadPatternRouter;
+export = QuadPatternRouter;

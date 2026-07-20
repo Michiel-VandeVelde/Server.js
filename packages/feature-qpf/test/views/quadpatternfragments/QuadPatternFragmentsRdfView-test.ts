@@ -1,12 +1,12 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
-let QuadPatternFragmentsRdfView = require('../../../').views.quadpatternfragments.QuadPatternFragmentsRdfView;
+import ThisPackage = require('../../../');
+import _ = require('lodash');
+import * as fs from 'fs';
+import * as path from 'path';
+import * as AsyncIterator from 'asynciterator';
+import * as N3 from 'n3';
 
-let _ = require('lodash'),
-    fs = require('fs'),
-    path = require('path'),
-    AsyncIterator = require('asynciterator'),
-    N3 = require('n3');
-
+const QuadPatternFragmentsRdfView = ThisPackage.views.quadpatternfragments.QuadPatternFragmentsRdfView;
 const dataFactory = N3.DataFactory;
 
 describe('QuadPatternFragmentsRdfView', () => {
@@ -22,7 +22,7 @@ describe('QuadPatternFragmentsRdfView', () => {
 
   describe('A QuadPatternFragmentsRdfView instance', () => {
     let view = new QuadPatternFragmentsRdfView({ dataFactory });
-    let settings = {
+    let settings: any = {
       datasource: {
         title: 'My data',
         index: 'http://ex.org/#dataset',
@@ -58,16 +58,16 @@ describe('QuadPatternFragmentsRdfView', () => {
       'application/n-quads': 'nq',
       'application/ld+json': 'jsonld',
     },
-    (extension, format) => {
+    (extension: any, format: any) => {
       describe('when render is called for ' + format, () => {
-        function readAsset(name) {
+        function readAsset(name: any) {
           let file = path.join(__dirname, '../../../../../test/assets/', name + '.' + extension);
           return fs.readFileSync(file, 'utf8');
         }
 
         describe('with an empty triple stream', () => {
           let results = AsyncIterator.empty();
-          let response = test.createStreamCapture();
+          let response = (test as any).createStreamCapture();
           before((done) => {
             settings.results = results;
             response.getHeader = sinon.stub().returns(format);
@@ -86,7 +86,7 @@ describe('QuadPatternFragmentsRdfView', () => {
             dataFactory.quad(dataFactory.namedNode('a'), dataFactory.namedNode('d'), dataFactory.namedNode('e'), dataFactory.defaultGraph()),
             dataFactory.quad(dataFactory.namedNode('f'), dataFactory.namedNode('g'), dataFactory.namedNode('h'), dataFactory.defaultGraph()),
           ]);
-          let response = test.createStreamCapture();
+          let response = (test as any).createStreamCapture();
           before((done) => {
             settings.results = new AsyncIterator.TransformIterator();
             response.getHeader = sinon.stub().returns(format);
@@ -106,7 +106,7 @@ describe('QuadPatternFragmentsRdfView', () => {
             dataFactory.quad(dataFactory.namedNode('a'), dataFactory.namedNode('d'), dataFactory.namedNode('e'), dataFactory.defaultGraph()),
             dataFactory.quad(dataFactory.namedNode('f'), dataFactory.namedNode('g'), dataFactory.namedNode('h'), dataFactory.defaultGraph()),
           ]);
-          let response = test.createStreamCapture();
+          let response = (test as any).createStreamCapture();
           before((done) => {
             settings.results = results;
             response.getHeader = sinon.stub().returns(format);
@@ -123,7 +123,7 @@ describe('QuadPatternFragmentsRdfView', () => {
 
         describe('with a query with a limit but no offset', () => {
           let results = AsyncIterator.empty();
-          let settings = {
+          let settings: any = {
             datasource: { },
             fragment: {
               pageUrl:         'mypage',
@@ -133,7 +133,7 @@ describe('QuadPatternFragmentsRdfView', () => {
             },
             query: { limit: 100 },
           };
-          let response = test.createStreamCapture();
+          let response = (test as any).createStreamCapture();
           before((done) => {
             settings.results = results;
             response.getHeader = sinon.stub().returns(format);
@@ -156,7 +156,7 @@ describe('QuadPatternFragmentsRdfView', () => {
 
         describe('with a query with a limit and offset before the end', () => {
           let results = AsyncIterator.empty();
-          let settings = {
+          let settings: any = {
             datasource: { },
             fragment: {
               pageUrl:         'mypage',
@@ -166,7 +166,7 @@ describe('QuadPatternFragmentsRdfView', () => {
             },
             query: { limit: 100, offset: 1133 },
           };
-          let response = test.createStreamCapture();
+          let response = (test as any).createStreamCapture();
           before((done) => {
             settings.results = results;
             response.getHeader = sinon.stub().returns(format);
@@ -189,7 +189,7 @@ describe('QuadPatternFragmentsRdfView', () => {
 
         describe('with a query with a limit and offset past the end', () => {
           let results = AsyncIterator.empty();
-          let settings = {
+          let settings: any = {
             datasource: { },
             fragment: {
               pageUrl:         'mypage',
@@ -199,7 +199,7 @@ describe('QuadPatternFragmentsRdfView', () => {
             },
             query: { limit: 100, offset: 1135 },
           };
-          let response = test.createStreamCapture();
+          let response = (test as any).createStreamCapture();
           before((done) => {
             settings.results = results;
             response.getHeader = sinon.stub().returns(format);
