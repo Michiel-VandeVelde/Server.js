@@ -8,20 +8,37 @@ export function toRegExp(string: string) {
 // The MIME type for plaintext
 export const MIME_PLAINTEXT = 'text/plain;charset=utf-8';
 
-// Creates a specific type of error
-export function createErrorType(BaseError?: any, name?: any, init?: any): any {
-  if (typeof BaseError !== 'function')
-    init = name, name = BaseError, BaseError = Error;
+type ErrorBaseConstructor = new (message?: string) => Error;
+type ErrorInit = (this: Error, ...args: any[]) => void;
+
+// Creates a specific type of error, optionally deriving from a given base error type.
+// Can be called as `createErrorType(name, init?)` or `createErrorType(BaseError, name, init?)`.
+// NOTE: `ErrorType` below is an ES5-style pseudo-class whose constructor returns a value
+// that isn't `this` (a pattern that predates real JS classes) — TypeScript has no way to
+// express that natively, so the return value is deliberately cast to the shape callers
+// actually rely on: a `new`-able constructor producing an `Error`.
+export function createErrorType(BaseError?: ErrorBaseConstructor | string, nameOrInit?: string | ErrorInit, initArg?: ErrorInit): ErrorBaseConstructor {
+  let Base: ErrorBaseConstructor, name: string, init: ErrorInit | undefined;
+  if (typeof BaseError !== 'function') {
+    Base = Error;
+    name = BaseError as string;
+    init = nameOrInit as ErrorInit | undefined;
+  }
+  else {
+    Base = BaseError;
+    name = nameOrInit as string;
+    init = initArg;
+  }
   function ErrorType(this: any, message?: string): any {
     let error: any = this instanceof (ErrorType as any) ? this : new (ErrorType as any)(message);
     error.name = name;
     error.message = message || '';
     Error.captureStackTrace(error, error.constructor);
-    init && init.apply(error, arguments);
+    init && init.apply(error, arguments as unknown as any[]);
     return error;
   }
-  ErrorType.prototype = new BaseError();
+  ErrorType.prototype = new Base();
   ErrorType.prototype.name = name;
   ErrorType.prototype.constructor = ErrorType;
-  return ErrorType;
+  return ErrorType as unknown as ErrorBaseConstructor;
 }

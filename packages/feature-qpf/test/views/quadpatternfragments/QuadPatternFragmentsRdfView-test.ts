@@ -71,7 +71,7 @@ describe('QuadPatternFragmentsRdfView', () => {
           before((done) => {
             settings.results = results;
             response.getHeader = sinon.stub().returns(format);
-            view.render(settings, {}, response, done);
+            view.render(settings, {} as any, response, done);
             results.setProperty('metadata', { totalCount: 1234 });
           });
 
@@ -90,7 +90,7 @@ describe('QuadPatternFragmentsRdfView', () => {
           before((done) => {
             settings.results = new AsyncIterator.TransformIterator();
             response.getHeader = sinon.stub().returns(format);
-            view.render(settings, {}, response, done);
+            view.render(settings, {} as any, response, done);
             settings.results.setProperty('metadata', { totalCount: 1234 });
             settings.results.source = results;
           });
@@ -110,7 +110,7 @@ describe('QuadPatternFragmentsRdfView', () => {
           before((done) => {
             settings.results = results;
             response.getHeader = sinon.stub().returns(format);
-            view.render(settings, {}, response, done);
+            view.render(settings, {} as any, response, done);
             setImmediate(() => {
               results.setProperty('metadata', { totalCount: 1234 });
             });
@@ -137,7 +137,7 @@ describe('QuadPatternFragmentsRdfView', () => {
           before((done) => {
             settings.results = results;
             response.getHeader = sinon.stub().returns(format);
-            view.render(settings, {}, response, done);
+            view.render(settings, {} as any, response, done);
             results.setProperty('metadata', { totalCount: 1234 });
           });
 
@@ -170,7 +170,7 @@ describe('QuadPatternFragmentsRdfView', () => {
           before((done) => {
             settings.results = results;
             response.getHeader = sinon.stub().returns(format);
-            view.render(settings, {}, response, done);
+            view.render(settings, {} as any, response, done);
             results.setProperty('metadata', { totalCount: 1234 });
           });
 
@@ -203,7 +203,7 @@ describe('QuadPatternFragmentsRdfView', () => {
           before((done) => {
             settings.results = results;
             response.getHeader = sinon.stub().returns(format);
-            view.render(settings, {}, response, done);
+            view.render(settings, {} as any, response, done);
             results.setProperty('metadata', { totalCount: 1234 });
           });
 

@@ -3,28 +3,48 @@
 
 import _ = require('lodash');
 import * as fs from 'fs';
+import * as http from 'http';
+import * as https from 'https';
+import type { Socket } from 'net';
 import * as Util from './Util';
 import ErrorController = require('./controllers/ErrorController');
 import UrlData = require('./UrlData');
+import type Controller = require('./controllers/Controller');
+import type { LdfRequest, LdfResponse, LinkedDataFragmentsServerOptions } from './types';
+
+// The object actually returned by the constructor below: a Node HTTP(S) server with
+// LinkedDataFragmentsServer's own methods/fields copied onto it. See the constructor
+// for why — instances of this class are never used directly; only `new`-ing it matters.
+interface LinkedDataFragmentsServerInstance extends http.Server {
+  _sockets: Record<number, Socket>;
+  _log: (...args: unknown[]) => void;
+  _accesslogger: (request: LdfRequest, response: LdfResponse) => void;
+  _controllers: Controller[];
+  _errorController: ErrorController;
+  _defaultHeaders: Record<string, string>;
+  _processRequest(request: LdfRequest, response: LdfResponse): void;
+  _reportError(request: LdfRequest | Error | null, response?: LdfResponse, error?: Error): void;
+  stop(): void;
+}
 
 // Creates a new LinkedDataFragmentsServer
 class LinkedDataFragmentsServer {
   [key: string]: any;
 
-  constructor(options?: any) {
+  constructor(options?: LinkedDataFragmentsServerOptions) {
     // Create the HTTP(S) server
     let server: any, sockets = 0;
     let urlData = options && options.urlData ? options.urlData : new UrlData();
     switch (urlData.protocol) {
     case 'http':
-      server = require('http').createServer();
+      server = http.createServer();
       break;
     case 'https':
-      const ssl = options.ssl || {}, authentication = options.authentication || {};
+      const ssl = options!.ssl || {}, authentication = options!.authentication || {};
       // WebID authentication requires a client certificate
       if (authentication.webid)
         ssl.requestCert = ssl.rejectUnauthorized = true;
-      server = require('https').createServer({ ...ssl, ..._.mapValues(ssl.keys, readHttpsOption) });
+      server = https.createServer({ ...ssl, ..._.mapValues(ssl.keys, readHttpsOption) });
       break;
     default:
       throw new Error('The configured protocol ' + urlData.protocol + ' is invalid.');
@@ -36,30 +56,32 @@ class LinkedDataFragmentsServer {
 
     // Assign settings
     server._sockets = {};
-    server._log = options.log || _.noop;
-    server._accesslogger = options.accesslogger || _.noop;
-    server._controllers = options.controllers || [];
+    server._log = options!.log || _.noop;
+    server._accesslogger = options!.accesslogger || _.noop;
+    server._controllers = options!.controllers || [];
     server._errorController = new ErrorController(options);
-    server._defaultHeaders = options.response && options.response.headers || {};
+    server._defaultHeaders = options!.response && options!.response.headers || {};
 
     // Attach event listeners
-    server.on('error', (error: any) => { server._reportError(error); });
-    server.on('request', (request: any, response: any) => {
+    server.on('error', (error: Error) => { server._reportError(error); });
+    server.on('request', (request: LdfRequest, response: LdfResponse) => {
       server._accesslogger(request, response);
       try { server._processRequest(request, response); }
       catch (error) { server._reportError(request, response, error); }
     });
-    server.on('connection', (socket: any) => {
+    server.on('connection', (socket: Socket) => {
       let socketId = sockets++;
       server._sockets[socketId] = socket;
       socket.on('close', () => { delete server._sockets[socketId]; });
     });
-    return server;
+    // The constructor intentionally returns a different object than `this`
+    // (see LinkedDataFragmentsServerInstance above) — not expressible without a cast.
+    return server as LinkedDataFragmentsServerInstance;
   }
 }
 
 // Handles an incoming HTTP request
-LinkedDataFragmentsServer.prototype._processRequest = function (request: any, response: any) {
+LinkedDataFragmentsServer.prototype._processRequest = function (this: LinkedDataFragmentsServerInstance, request: LdfRequest, response: LdfResponse) {
   // Add default response headers
   for (let header in this._defaultHeaders)
     response.setHeader(header, this._defaultHeaders[header]);
@@ -72,8 +94,8 @@ LinkedDataFragmentsServer.prototype._processRequest = function (request: any, re
   // Don't write a body with HEAD and OPTIONS
   case 'HEAD':
   case 'OPTIONS':
-    response.write = function () {};
-    response.end = response.end.bind(response, '', '');
+    response.write = function () { return true; };
+    response.end = response.end.bind(response, '', '' as BufferEncoding);
     break;
   // Reject all other methods
   default:
@@ -84,7 +106,7 @@ LinkedDataFragmentsServer.prototype._processRequest = function (request: any, re
 
   // Try each of the controllers in order
   let self = this, controllerId = 0;
-  function nextController(error?: any) {
+  function nextController(error?: Error) {
     // Error if the previous controller failed
     if (error)
       response.emit('error', error);
@@ -95,24 +117,25 @@ LinkedDataFragmentsServer.prototype._processRequest = function (request: any, re
     else {
       let controller = self._controllers[controllerId++], next = _.once(nextController);
       try { controller.handleRequest(request, response, next); }
-      catch (error) { next(error); }
+      catch (error) { next(error as Error); }
     }
   }
-  response.on('error', (error: any) => { self._reportError(request, response, error); });
+  response.on('error', (error: Error) => { self._reportError(request, response, error); });
   nextController();
 };
 
 // Serves an application error
-LinkedDataFragmentsServer.prototype._reportError = function (request: any, response: any, error: any) {
+LinkedDataFragmentsServer.prototype._reportError = function (this: LinkedDataFragmentsServerInstance, request: LdfRequest | Error | null, response?: LdfResponse, error?: Error) {
   // If no request or response is available, the server failed outside of a request; don't recover
   if (!response) {
-    error = request, response = request = null;
+    error = request as Error;
+    request = response = null as any;
     this._log('Fatal error, exiting process\n', error.stack);
     return process.exit(-1);
   }
 
   // Log the error
-  this._log(error.stack);
+  this._log(error!.stack);
 
   // Try to report the error in the response
   try {
@@ -120,30 +143,30 @@ LinkedDataFragmentsServer.prototype._reportError = function (request: any, respo
     if (response.error || response.headersSent)
       return response.end();
     response.error = error;
-    this._errorController.handleRequest(request, response, _.noop);
+    this._errorController.handleRequest(request as LdfRequest, response, _.noop);
   }
   catch (responseError: any) { this._log(responseError.stack); }
 };
 
 // Stops the server
-LinkedDataFragmentsServer.prototype.stop = function () {
+LinkedDataFragmentsServer.prototype.stop = function (this: LinkedDataFragmentsServerInstance) {
   // Don't accept new connections, and close existing ones
   this.close();
   for (let id in this._sockets)
     this._sockets[id].destroy();
 
   // Close all controllers
-  this._controllers.forEach(function (this: any, controller: any) {
+  this._controllers.forEach(function (this: LinkedDataFragmentsServerInstance, controller: Controller) {
     try { controller.close && controller.close(); }
     catch (error) { this._log(error); }
   }, this);
 };
 
 // Reads the value of an option for the https module
-function readHttpsOption(value: any): any {
+function readHttpsOption(value: string | string[]): string | Buffer | (string | Buffer)[] {
   // Read each value of an array
   if (Array.isArray(value))
-    return value.map(readHttpsOption);
+    return value.map(readHttpsOption) as (string | Buffer)[];
   // Certificates and keys can be strings or files
   else if (typeof value === 'string' && fs.existsSync(value))
     return fs.readFileSync(value);

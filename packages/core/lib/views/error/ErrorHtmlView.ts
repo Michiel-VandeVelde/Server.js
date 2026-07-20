@@ -2,15 +2,16 @@
 /* An ErrorRdfView represents a 500 response in HTML. */
 
 import HtmlView = require('../HtmlView');
+import type { LdfRequest, LdfResponse, RenderDone, ViewSettings } from '../../types';
 
 // Creates a new ErrorHtmlView
 class ErrorHtmlView extends HtmlView {
-  constructor(settings?: any) {
+  constructor(settings?: ViewSettings) {
     super('Error', settings);
   }
 
   // Renders the view with the given settings to the response
-  override _render(settings: any, request: any, response: any, done: any) {
+  override _render(settings: Record<string, any>, request: LdfRequest, response: LdfResponse, done: RenderDone) {
     this._renderTemplate('error/error', settings, request, response, done);
   }
 }

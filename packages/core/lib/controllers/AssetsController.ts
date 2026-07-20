@@ -7,12 +7,19 @@ import * as path from 'path';
 import * as mime from 'mime';
 import * as Util from '../Util';
 import UrlData = require('../UrlData');
+import type { AssetsControllerOptions, LdfRequest, LdfResponse } from '../types';
+
+interface Asset {
+  type: string;
+  contents: Buffer;
+}
 
 // Creates a new AssetsController
 class AssetsController extends Controller {
-  [key: string]: any;
+  protected _matcher: RegExp;
+  protected _assets: Record<string, Asset>;
 
-  constructor(options?: any) {
+  constructor(options?: AssetsControllerOptions) {
     options = options || {};
     super(options);
 
@@ -28,14 +35,14 @@ class AssetsController extends Controller {
   }
 
   // Recursively reads assets in the folder, assigning them to the URL path
-  _readAssetsFolder(assetsFolder: any, assetsPath: any) {
+  _readAssetsFolder(assetsFolder: string, assetsPath: string) {
     if (assetsFolder.indexOf('file:///') === 0)
       assetsFolder = assetsFolder.replace('file:///', '');
-    fs.readdirSync(assetsFolder).forEach(function (this: any, name: any) {
+    fs.readdirSync(assetsFolder).forEach((name: string) => {
       let filename = path.join(assetsFolder, name), stats = fs.statSync(filename);
       // Read an asset file into memory
       if (stats.isFile()) {
-        let assetType: any = mime.getType(filename);
+        let assetType = mime.getType(filename) || '';
         this._assets[assetsPath + name.replace(/[.][^.]+$/, '')] = {
           type: assetType.indexOf('text/') ? assetType : assetType + ';charset=utf-8',
           contents: fs.readFileSync(filename),
@@ -44,12 +51,12 @@ class AssetsController extends Controller {
       // Read all asset files in a folder
       else if (stats.isDirectory())
         this._readAssetsFolder(filename, assetsPath + name + '/');
-    }, this);
+    });
   }
 
   // Try to serve the requested asset
-  override _handleRequest(request: any, response: any, next: any) {
-    let assetMatch = request.url.match(this._matcher), asset;
+  override _handleRequest(request: LdfRequest, response: LdfResponse, next: (error?: Error) => void) {
+    let assetMatch = request.url!.match(this._matcher), asset;
     if (asset = assetMatch && this._assets[assetMatch[1] || assetMatch[2]]) {
       response.writeHead(200, {
         'Content-Type': asset.type,

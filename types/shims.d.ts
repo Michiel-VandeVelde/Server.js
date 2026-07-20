@@ -4,7 +4,13 @@ declare module 'forwarded-parse' {
 }
 
 declare module 'negotiate' {
-  const negotiate: any;
+  interface Negotiate {
+    choose<T extends { type: string; responseType: string; quality: number }>(
+      candidates: T[],
+      request: { headers: import('http').IncomingHttpHeaders },
+    ): T[];
+  }
+  const negotiate: Negotiate;
   export = negotiate;
 }
 

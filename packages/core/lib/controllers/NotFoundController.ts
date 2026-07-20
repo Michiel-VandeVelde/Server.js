@@ -3,18 +3,19 @@
 
 import Controller = require('./Controller');
 import * as Util from '../Util';
+import type { ControllerOptions, LdfRequest, LdfResponse } from '../types';
 
 // Creates a new NotFoundController
 class NotFoundController extends Controller {
-  [key: string]: any;
+  public _last: boolean;
 
-  constructor(options?: any) {
+  constructor(options?: ControllerOptions) {
     super(options);
     this._last = true;
   }
 
   // Serves a 404 response
-  override _handleRequest(request: any, response: any, next: any) {
+  override _handleRequest(request: LdfRequest, response: LdfResponse, next: (error?: Error) => void) {
     // Cache 404 responses
     response.setHeader('Cache-Control', 'public,max-age=3600');
 
@@ -26,7 +27,7 @@ class NotFoundController extends Controller {
   }
 
   // Writes the 404 in plaintext if no view was found
-  override _handleNotAcceptable(request: any, response: any, next: any) {
+  override _handleNotAcceptable(request: LdfRequest, response: LdfResponse, next: (error?: Error) => void) {
     response.writeHead(404, { 'Content-Type': Util.MIME_PLAINTEXT });
     response.end(request.url + ' not found\n');
   }

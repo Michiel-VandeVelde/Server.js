@@ -4,12 +4,14 @@
 import _ = require('lodash');
 import * as fs from 'fs';
 import LinkedDataFragmentsServer = require('./LinkedDataFragmentsServer');
+import type Controller = require('./controllers/Controller');
+import type { WorkerConfig } from './types';
 
 // Creates a new LinkedDataFragmentsServerWorker
 class LinkedDataFragmentsServerWorker {
-  private _config: any;
+  private _config: WorkerConfig;
 
-  constructor(config: any) {
+  constructor(config: WorkerConfig) {
     if (!config.datasources)
       throw new Error('At least one datasource must be defined.');
     if (!config.controllers)
@@ -21,21 +23,21 @@ class LinkedDataFragmentsServerWorker {
     Object.keys(config.datasources).forEach((datasourceId) => {
       let datasource = config.datasources[datasourceId];
       datasource.on('error', datasourceError);
-      function datasourceError(error: any) {
+      function datasourceError(error: Error) {
         config.datasources[datasourceId].hide = true;
         process.stderr.write('WARNING: skipped datasource ' + datasourceId + '. ' + error.message + '\n');
       }
     });
 
     // Set up logging
-    let loggingSettings = config.logging;
+    let loggingSettings = config.logging!;
     // eslint-disable-next-line no-console
     config.log = console.log;
     if (loggingSettings.enabled) {
       let accesslog = require('access-log');
       config.accesslogger = function (request: any, response: any) {
-        accesslog(request, response, null, (logEntry: any) => {
-          fs.appendFile(loggingSettings.file, logEntry + '\n', (error) => {
+        accesslog(request, response, null, (logEntry: string) => {
+          fs.appendFile(loggingSettings.file!, logEntry + '\n', (error) => {
             error && process.stderr.write('Error when writing to access log file: ' + error);
           });
         });
@@ -43,19 +45,19 @@ class LinkedDataFragmentsServerWorker {
     }
 
     // Make sure the 'last' controllers are last in the array and the 'first' are first.
-    let lastControllers = _.remove(config.controllers, (controller) => {
+    let lastControllers = _.remove(config.controllers!, (controller: Controller) => {
       return controller._last;
     });
-    let firstControllers = _.remove(config.controllers, (controller) => {
+    let firstControllers = _.remove(config.controllers!, (controller: Controller) => {
       return controller._first;
     });
-    config.controllers = firstControllers.concat(config.controllers.concat(lastControllers));
+    config.controllers = firstControllers.concat(config.controllers!.concat(lastControllers));
 
     this._config = config;
   }
 
   // Start the worker
-  run(port?: any) {
+  run(port?: number) {
     let config = this._config;
     if (port)
       config.port = port;
@@ -78,7 +80,7 @@ class LinkedDataFragmentsServerWorker {
         server.listen(config.port);
         // eslint-disable-next-line no-console
         console.log('Worker %d running on %s://localhost:%d/ (URL: %s).',
-          process.pid, config.urlData.protocol, config.port, config.urlData.baseURL);
+          process.pid, config.urlData!.protocol, config.port, config.urlData!.baseURL);
       }
     }
 

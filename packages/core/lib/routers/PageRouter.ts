@@ -1,25 +1,27 @@
 /*! @license MIT ©2014-2016 Ruben Verborgh, Ghent University - imec */
 /* A PageRouter routes page numbers to offsets */
 
+import type { Query, RouterRequest } from '../types';
+
 // Creates a new PageRouter with the given page size, which defaults to 100.
 class PageRouter {
   private pageSize: number;
 
-  constructor(config?: any) {
+  constructor(config?: { pageSize?: number }) {
     config = config || {};
-    this.pageSize = isFinite(config.pageSize) && config.pageSize > 1 ? ~~config.pageSize : 100;
+    this.pageSize = isFinite(config.pageSize!) && config.pageSize! > 1 ? ~~config.pageSize! : 100;
   }
 
   // Extracts a page parameter from the request and adds it to the query
-  extractQueryParams(request: any, query: any) {
-    let page = request.url && request.url.query && request.url.query.page,
+  extractQueryParams(request: RouterRequest, query: Query) {
+    let page: string | number | undefined = request.url && request.url.query && request.url.query.page as string | undefined,
         features = query.features || (query.features = {});
 
     // Set the limit to the page size
     features.limit = true, query.limit = this.pageSize;
 
     // If a page is given, adjust the offset
-    if (page && /^\d+$/.test(page) && (page = parseInt(page, 10)) > 1)
+    if (page && /^\d+$/.test(page as string) && (page = parseInt(page as string, 10)) > 1)
       features.offset = true, query.offset = this.pageSize * (page - 1);
   }
 }

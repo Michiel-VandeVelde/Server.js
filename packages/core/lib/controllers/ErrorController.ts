@@ -3,17 +3,16 @@
 
 import Controller = require('./Controller');
 import * as Util from '../Util';
+import type { ControllerOptions, LdfRequest, LdfResponse } from '../types';
 
 // Creates a new ErrorController
 class ErrorController extends Controller {
-  [key: string]: any;
-
-  constructor(options?: any) {
+  constructor(options?: ControllerOptions) {
     super(options);
   }
 
   // Serves an error response
-  override _handleRequest(request: any, response: any, next: any) {
+  override _handleRequest(request: LdfRequest, response: LdfResponse, next: (error?: Error) => void) {
     // Try to write an error response through an appropriate view
     let error = response.error || (response.error = new Error('Unknown error')),
         view = this._negotiateView('Error', request, response),
@@ -23,9 +22,9 @@ class ErrorController extends Controller {
   }
 
   // Writes the error in plaintext if no view was found
-  override _handleNotAcceptable(request: any, response: any, next: any) {
+  override _handleNotAcceptable(request: LdfRequest, response: LdfResponse, next: (error?: Error) => void) {
     response.writeHead(500, { 'Content-Type': Util.MIME_PLAINTEXT });
-    response.end('Application error: ' + response.error.message + '\n');
+    response.end('Application error: ' + response.error!.message + '\n');
   }
 }
 

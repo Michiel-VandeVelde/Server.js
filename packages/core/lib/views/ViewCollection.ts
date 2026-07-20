@@ -9,6 +9,8 @@
 
 import negotiate = require('negotiate');
 import * as Util from '../Util';
+import type View = require('./View');
+import type { LdfRequest, ViewMatch } from '../types';
 
 let ViewCollectionError = Util.createErrorType('ViewCollectionError');
 
@@ -18,36 +20,39 @@ class ViewCollection {
 
   static ViewCollectionError = ViewCollectionError;
 
-  constructor(views?: any) {
+  protected _views: Record<string, View[]>;
+  protected _viewMatchers: Record<string, ViewMatch[]>;
+
+  constructor(views?: View[]) {
     this._views = {};        // Views keyed by name
     this._viewMatchers = {}; // Views matchers keyed by name; each one matches one content type
     views && this.addViews(views);
   }
 
   // Adds the given view to the collection
-  addView(view: any) {
+  addView(view: View) {
     // Add the view to the list per type
     (this._views[view.name] || (this._views[view.name] = [])).push(view);
     // Add a match entry for each content type supported by the view
     let matchers = this._viewMatchers[view.name] || (this._viewMatchers[view.name] = []);
-    view.supportedContentTypes.forEach((contentType: any) => {
+    view.supportedContentTypes.forEach((contentType) => {
       matchers.push({ ...contentType, view: view });
     });
   }
 
   // Adds the given views to the collection
-  addViews(views: any) {
+  addViews(views: View[]) {
     for (let i = 0; i < views.length; i++)
       this.addView(views[i]);
   }
 
   // Gets all views with the given name
-  getViews(name: any) {
+  getViews(name: string): View[] {
     return this._views[name] || [];
   }
 
   // Gets the best match for views with the given name that accommodate the request
-  matchView(name: any, request: any) {
+  matchView(name: string, request: LdfRequest): ViewMatch {
     // Retrieve the views with the given name
     let viewList = this._viewMatchers[name];
     if (!viewList || !viewList.length)

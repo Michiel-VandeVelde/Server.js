@@ -8,10 +8,11 @@ import * as path from 'path';
 import _ = require('lodash');
 import * as RdfString from 'rdf-string';
 import UrlData = require('../UrlData');
+import type { LdfRequest, LdfResponse, RenderDone, ViewSettings } from '../types';
 
 // Creates a new HTML view with the given name and settings
 class HtmlView extends View {
-  constructor(viewName?: any, settings?: any) {
+  constructor(viewName?: string, settings?: ViewSettings) {
     settings = settings || {};
     settings.urlData = settings.urlData || new UrlData();
     let defaults = {
@@ -23,7 +24,7 @@ class HtmlView extends View {
   }
 
   // Renders the template with the given name to the response
-  _renderTemplate(templateName: any, options: any, request: any, response: any, done: any) {
+  _renderTemplate(templateName: string, options: Record<string, any>, request: LdfRequest, response: LdfResponse, done: RenderDone) {
     // Initialize all view extensions
     let extensions = options.extensions || (options.extensions = {}), self = this;
     for (let extension in extensions) {
@@ -36,11 +37,11 @@ class HtmlView extends View {
     // Render the template with its options
     let fileName = (templateName[0] === '/' ? templateName : path.join(__dirname, templateName)) + '.html';
     qejs.renderFile(fileName, options)
-      .then((html: any) => { response.write(html); done(); })
-      .fail((error: any) => { done(error); });
+      .then((html: string) => { response.write(html); done(); })
+      .fail((error: Error) => { done(error); });
 
-    function newExtensionViewConstructor(extension: any, options: any, request: any, response: any) {
-      return function (data: any) {
+    function newExtensionViewConstructor(extension: string, options: Record<string, any>, request: LdfRequest, response: LdfResponse) {
+      return function (data: Record<string, any>) {
         let subOptions = { ...options };
         for (let key in data)
           subOptions[key] = data[key];
@@ -50,8 +51,8 @@ class HtmlView extends View {
   }
 
   // Renders the view extensions to a string, returned through a promise
-  _renderViewExtensionContents(name: any, options: any, request: any, response: any) {
-    let buffer = '', writer = { write: function (data: any) { buffer += data; }, end: _.noop };
+  _renderViewExtensionContents(name: string, options: Record<string, any>, request: LdfRequest, response: LdfResponse) {
+    let buffer = '', writer = { write: function (data: string) { buffer += data; }, end: _.noop };
     return q.ninvoke(this, '_renderViewExtensions', name, options, request, writer)
       .then(() => { return buffer; });
   }

@@ -5,12 +5,14 @@ import Controller = require('./Controller');
 import url = require('url');
 import _ = require('lodash');
 import * as Util from '../Util';
+import type { DereferenceControllerOptions, LdfRequest, LdfResponse } from '../types';
 
 // Creates a new DeferenceController
 class DeferenceController extends Controller {
-  [key: string]: any;
+  protected _paths: Record<string, { path: string }>;
+  protected _matcher: RegExp;
 
-  constructor(options?: any) {
+  constructor(options?: DereferenceControllerOptions) {
     options = options || {};
     super(options);
     let paths = this._paths = options.dereference || {};
@@ -20,13 +22,13 @@ class DeferenceController extends Controller {
   }
 
   // Dereferences a URL by redirecting to its subject fragment of a certain data source
-  override _handleRequest(request: any, response: any, next: any) {
-    let match = this._matcher.exec(request.url), datasource;
+  override _handleRequest(request: LdfRequest, response: LdfResponse, next: (error?: Error) => void) {
+    let match = this._matcher.exec(request.url!), datasource;
     if (datasource = match && this._paths[match[1]]) {
       let entity = url.format(_.defaults({
         pathname: datasource.path,
-        query: { subject: url.format(request.parsedUrl) },
-      }, request.parsedUrl));
+        query: { subject: url.format(request.parsedUrl!) },
+      }, request.parsedUrl!));
       response.writeHead(303, { 'Location': entity, 'Content-Type': Util.MIME_PLAINTEXT });
       response.end(entity);
     }
