@@ -2,7 +2,6 @@
 /* An HdtDatasource loads and queries an HDT document in-process. */
 
 import LdfCore = require('@ldf/core');
-const hdt: any = require('hdt');
 import ExternalHdtDatasource = require('./ExternalHdtDatasource');
 
 const Datasource = LdfCore.datasources.Datasource;
@@ -22,6 +21,9 @@ class HdtDatasource extends Datasource {
 
   // Loads the HDT datasource
   override async _initialize() {
+    // Required lazily: `hdt` is an optionalDependency (native module), and this
+    // path is only reached for in-process (non-`external`) HdtDatasource instances.
+    const hdt: any = require('hdt');
     this._hdtDocument = await hdt.fromFile(this._hdtFile, { dataFactory: this.dataFactory });
   }
 
