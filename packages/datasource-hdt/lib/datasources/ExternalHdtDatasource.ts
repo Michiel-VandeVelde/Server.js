@@ -1,17 +1,19 @@
 /*! @license MIT ©2014-2016 Ruben Verborgh, Ghent University - imec */
 /* An ExternalHdtDatasource uses an external process to query an HDT document. */
 
-let Datasource = require('@ldf/core').datasources.Datasource,
-    fs = require('fs'),
-    path = require('path'),
-    N3Parser = require('n3').Parser,
-    spawn = require('child_process').spawn;
+import LdfCore = require('@ldf/core');
+import * as fs from 'fs';
+import * as path from 'path';
+import { Parser as N3Parser } from 'n3';
+import { spawn } from 'child_process';
+
+const Datasource = LdfCore.datasources.Datasource;
 
 let hdtUtility = path.join(__dirname, '../../node_modules/.bin/hdt');
 
 // Creates a new ExternalHdtDatasource
 class ExternalHdtDatasource extends Datasource {
-  constructor(options) {
+  constructor(options?: any) {
     let supportedFeatureList = ['quadPattern', 'triplePattern', 'limit', 'offset', 'totalCount'];
     super(options, supportedFeatureList);
 
@@ -22,7 +24,7 @@ class ExternalHdtDatasource extends Datasource {
   }
 
   // Prepares the datasource for querying
-  async _initialize() {
+  override async _initialize() {
     if (this._options.checkFile !== false) {
       if (!fs.existsSync(this._hdtFile))
         throw new Error('Not an HDT file: ' + this._hdtFile);
@@ -32,7 +34,7 @@ class ExternalHdtDatasource extends Datasource {
   }
 
   // Writes the results of the query to the given quad stream
-  _executeQuery(query, destination) {
+  override _executeQuery(query: any, destination: any) {
     // Only the default graph has results
     if (query.graph && query.graph.termType !== 'DefaultGraph') {
       destination.setProperty('metadata', { totalCount: 0, hasExactCount: true });
@@ -64,7 +66,7 @@ class ExternalHdtDatasource extends Datasource {
         destination.close();
       }
     });
-    parser._prefixes._ = '_:'; // Ensure blank nodes are named consistently
+    (parser as any)._prefixes._ = '_:'; // Ensure blank nodes are named consistently
 
     // Extract the estimated number of total matches from the first (comment) line
     hdt.stdout.once('data', (header) => {
@@ -79,4 +81,4 @@ class ExternalHdtDatasource extends Datasource {
   }
 }
 
-module.exports = ExternalHdtDatasource;
+export = ExternalHdtDatasource;

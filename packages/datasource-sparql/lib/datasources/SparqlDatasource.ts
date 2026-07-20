@@ -1,9 +1,11 @@
 /*! @license MIT ©2014-2017 Ruben Verborgh and Ruben Taelman, Ghent University - imec */
 /* A SparqlDatasource provides queryable access to a SPARQL endpoint. */
 
-let Datasource = require('@ldf/core').datasources.Datasource,
-    SparqlJsonParser = require('sparqljson-parse').SparqlJsonParser,
-    LRU = require('lru-cache');
+import LdfCore = require('@ldf/core');
+import { SparqlJsonParser } from 'sparqljson-parse';
+import LRU = require('lru-cache');
+
+const Datasource = LdfCore.datasources.Datasource;
 
 let DEFAULT_COUNT_ESTIMATE = { totalCount: 1e9, hasExactCount: false };
 let ENDPOINT_ERROR = 'Error accessing SPARQL endpoint';
@@ -12,7 +14,7 @@ const xsd  = 'http://www.w3.org/2001/XMLSchema#';
 
 // Creates a new SparqlDatasource
 class SparqlDatasource extends Datasource {
-  constructor(options) {
+  constructor(options?: any) {
     let supportedFeatureList = ['quadPattern', 'triplePattern', 'limit', 'offset', 'totalCount'];
     super(options, supportedFeatureList);
 
@@ -29,7 +31,7 @@ class SparqlDatasource extends Datasource {
   }
 
   // Writes the results of the query to the given triple stream
-  _executeQuery(query, destination) {
+  override _executeQuery(query: any, destination: any) {
     // Create the HTTP request
     let sparqlPattern = this._createQuadPattern(query), self = this,
         selectQuery = this._createSelectQuery(sparqlPattern, query.offset, query.limit),
@@ -40,14 +42,14 @@ class SparqlDatasource extends Datasource {
     // Fetch and parse matching triples using JSON responses
     let json = '';
     this._request(request, emitError)
-      .on('data', (data) => { json += data; })
+      .on('data', (data: any) => { json += data; })
       .on('error', emitError)
       .on('end', () => {
         let response;
         try { response = JSON.parse(json); }
         catch (e) { return emitError({ message: INVALID_JSON_RESPONSE }); }
 
-        response.results.bindings.forEach((binding) => {
+        response.results.bindings.forEach((binding: any) => {
           binding = this._sparqlJsonParser.parseJsonBindings(binding);
           let triple = {
             subject:   binding.s || query.subject,
@@ -68,7 +70,7 @@ class SparqlDatasource extends Datasource {
 
     // Emits an error on the triple stream
     let errored = false;
-    function emitError(error) {
+    function emitError(error: any) {
       if (!error || errored) return;
       errored = true;
       destination.emit('error', new Error(ENDPOINT_ERROR + ' ' + self._endpoint + ': ' + error.message));
@@ -76,7 +78,7 @@ class SparqlDatasource extends Datasource {
   }
 
   // Retrieves the (approximate) number of triples that match the SPARQL pattern
-  _getPatternCount(sparqlPattern) {
+  _getPatternCount(sparqlPattern: any) {
     // Try to find a cache match
     let cache = this._countCache, count = cache.get(sparqlPattern);
     if (count)
@@ -97,7 +99,7 @@ class SparqlDatasource extends Datasource {
     return new Promise((resolve, reject) => {
       let csv = '';
       this._resolvingCountQueries[sparqlPattern] = true;
-      countResponse.on('data', (data) => { csv += data; });
+      countResponse.on('data', (data: any) => { csv += data; });
       countResponse.on('end', () => {
         delete this._resolvingCountQueries[sparqlPattern];
         let countMatch = csv.match(/\d+/);
@@ -121,7 +123,7 @@ class SparqlDatasource extends Datasource {
   }
 
   // Creates a SELECT query from the given SPARQL pattern
-  _createSelectQuery(sparqlPattern, offset, limit) {
+  _createSelectQuery(sparqlPattern: any, offset: any, limit: any) {
     let query = ['SELECT * WHERE', sparqlPattern];
     // Even though the SPARQL spec indicates that
     // LIMIT and OFFSET might be meaningless without ORDER BY,
@@ -133,12 +135,12 @@ class SparqlDatasource extends Datasource {
   }
 
   // Creates a SELECT COUNT(*) query from the given SPARQL pattern
-  _createCountQuery(sparqlPattern) {
+  _createCountQuery(sparqlPattern: any) {
     return 'SELECT (COUNT(*) AS ?c) WHERE ' + sparqlPattern;
   }
 
   // Creates a SPARQL pattern for the given triple pattern
-  _createQuadPattern(quad) {
+  _createQuadPattern(quad: any) {
     let query = ['{'];
 
     // Encapsulate in graph if we are not querying the default graph
@@ -163,7 +165,7 @@ class SparqlDatasource extends Datasource {
     return query.push('}'), query.join('');
   }
 
-  _encodeObject(term) {
+  _encodeObject(term: any): any {
     switch (term.termType) {
     case 'NamedNode':
       return '<' + term.value + '>';
@@ -180,7 +182,7 @@ class SparqlDatasource extends Datasource {
     }
   }
 
-  _convertLiteral(term) {
+  _convertLiteral(term: any): any {
     if (!term)
       return '?o';
     else {
@@ -191,4 +193,4 @@ class SparqlDatasource extends Datasource {
   }
 }
 
-module.exports = SparqlDatasource;
+export = SparqlDatasource;

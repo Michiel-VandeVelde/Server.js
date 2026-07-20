@@ -1,19 +1,21 @@
 /*! @license MIT ©2014-2016 Ruben Verborgh, Ghent University - imec */
 /* An JsonLdDatasource fetches data from a JSON-LD document. */
 
-let MemoryDatasource = require('@ldf/core').datasources.MemoryDatasource,
-    JsonLdParser = require('jsonld-streaming-parser').JsonLdParser;
+import LdfCore = require('@ldf/core');
+import { JsonLdParser } from 'jsonld-streaming-parser';
+
+const MemoryDatasource = LdfCore.datasources.MemoryDatasource;
 
 let ACCEPT = 'application/ld+json;q=1.0,application/json;q=0.7';
 
 // Creates a new JsonLdDatasource
 class JsonLdDatasource extends MemoryDatasource {
-  constructor(options) {
+  constructor(options?: any) {
     super(options);
   }
 
   // Retrieves all quads from the document
-  _getAllQuads(addQuad, done) {
+  override _getAllQuads(addQuad: any, done: any) {
     let document = this._fetch({ url: this._url, headers: { accept: ACCEPT } });
     new JsonLdParser({ baseIRI: this._url, dataFactory: this.dataFactory })
       .import(document)
@@ -23,4 +25,4 @@ class JsonLdDatasource extends MemoryDatasource {
   }
 }
 
-module.exports = JsonLdDatasource;
+export = JsonLdDatasource;

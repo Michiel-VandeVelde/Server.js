@@ -1,30 +1,32 @@
 /*! @license MIT ©2014-2016 Ruben Verborgh, Ghent University - imec */
 /* An HdtDatasource loads and queries an HDT document in-process. */
 
-let Datasource = require('@ldf/core').datasources.Datasource,
-    hdt = require('hdt'),
-    ExternalHdtDatasource = require('./ExternalHdtDatasource');
+import LdfCore = require('@ldf/core');
+const hdt: any = require('hdt');
+import ExternalHdtDatasource = require('./ExternalHdtDatasource');
+
+const Datasource = LdfCore.datasources.Datasource;
 
 // Creates a new HdtDatasource
 class HdtDatasource extends Datasource {
-  constructor(options) {
+  constructor(options?: any) {
     let supportedFeatureList = ['quadPattern', 'triplePattern', 'limit', 'offset', 'totalCount'];
     super(options, supportedFeatureList);
 
     options = options || {};
     // Switch to external HDT datasource if the `external` flag is set
     if (options.external)
-      return new ExternalHdtDatasource(options);
+      return new ExternalHdtDatasource(options) as any;
     this._hdtFile = (options.file || '').replace(/^file:\/\//, '');
   }
 
   // Loads the HDT datasource
-  async _initialize() {
+  override async _initialize() {
     this._hdtDocument = await hdt.fromFile(this._hdtFile, { dataFactory: this.dataFactory });
   }
 
   // Writes the results of the query to the given quad stream
-  _executeQuery(query, destination) {
+  override _executeQuery(query: any, destination: any) {
     // Only the default graph has results
     if (query.graph && query.graph.termType !== 'DefaultGraph') {
       destination.setProperty('metadata', { totalCount: 0, hasExactCount: true });
@@ -33,7 +35,7 @@ class HdtDatasource extends Datasource {
     }
     this._hdtDocument.searchTriples(query.subject, query.predicate, query.object,
       { limit: query.limit, offset: query.offset })
-      .then((result) => {
+      .then((result: any) => {
         let triples = result.triples,
             estimatedTotalCount = result.totalCount,
             hasExactCount = result.hasExactCount;
@@ -47,11 +49,11 @@ class HdtDatasource extends Datasource {
           destination._push(triples[i]);
         destination.close();
       },
-      (error) => { destination.emit('error', error); });
+      (error: any) => { destination.emit('error', error); });
   }
 
   // Closes the data source
-  close(done) {
+  override close(done: any) {
     // Close the HDT document if it is open
     if (this._hdtDocument) {
       this._hdtDocument.close().then(done, done);
@@ -64,4 +66,4 @@ class HdtDatasource extends Datasource {
 }
 
 
-module.exports = HdtDatasource;
+export = HdtDatasource;
