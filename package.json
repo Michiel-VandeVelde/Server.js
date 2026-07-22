@@ -51,7 +51,7 @@
     "lint-changed": "lerna run lint --since HEAD",
     "mocha": "sh ./test/run-mocha.sh",
     "test": "nyc npm run mocha",
-    "test-ci": "nyc --reporter=lcov npm run mocha",
+    "test-ci": "nyc --reporter=lcov npm run mocha; code=$?; node ./test/ensure-lcov.js; exit $code",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "typecheck-test": "tsc -p tsconfig.test.json --noEmit",
     "build": "tsc -p tsconfig.json",
