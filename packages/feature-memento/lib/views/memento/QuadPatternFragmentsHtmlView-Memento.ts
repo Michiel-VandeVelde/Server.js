@@ -4,20 +4,28 @@
 import LdfCore = require('@ldf/core');
 import TimegateController = require('../../controllers/TimegateController');
 import * as path from 'path';
+import type { LdfRequest, LdfResponse, RenderDone, ViewSettings } from '@ldf/core/lib/types';
+import type { InvertedTimegateMap, MementoRequestSettings, TimegateSettings } from '../../types';
 
 const HtmlView = LdfCore.views.HtmlView;
 
+interface MementoHtmlViewExtensionSettings extends ViewSettings {
+  timegates?: TimegateSettings;
+}
+
 // Creates a new MementoHtmlViewExtension
 class MementoHtmlViewExtension extends HtmlView {
-  constructor(settings: any) {
+  protected _invertedTimegateMap: InvertedTimegateMap;
+
+  constructor(settings: MementoHtmlViewExtensionSettings) {
     super('QuadPatternFragments:Before', settings);
     let timegates = settings.timegates || {};
-    this._invertedTimegateMap = (TimegateController as any).parseInvertedTimegateMap(timegates.mementos, settings.urlData);
+    this._invertedTimegateMap = TimegateController.parseInvertedTimegateMap(timegates.mementos, settings.urlData);
   }
 
   // Renders the view with the given settings to the response
-  override _render(settings: any, request: any, response: any, done: any) {
-    let memento = this._invertedTimegateMap[settings.datasource.id];
+  override _render(settings: MementoRequestSettings, request: LdfRequest, response: LdfResponse, done: RenderDone) {
+    let memento = this._invertedTimegateMap[settings.datasource.id!];
     if (!memento)
       return done();
     this._renderTemplate(path.join(__dirname, 'memento-details'), {

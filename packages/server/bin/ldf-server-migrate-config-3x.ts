@@ -10,15 +10,19 @@ if (!(args.length === 1 || (args.length === 2 && args[1] === '--apply'))) {
 
 migrateConfig(args[0], args[1] === '--apply');
 
-function migrateConfig(configFile: any, updateFile: any) {
+// The old (2.x, flat JSON) and new (3.x, ComponentsJS) config shapes are both loosely-structured
+// JSON that this script progressively reshapes in place (deleting old fields, adding new ones on
+// the same object) — a rigid interface per intermediate shape would fight the script's own logic
+// more than it would help, so both stay a plain untyped JSON bag.
+function migrateConfig(configFile: string, updateFile: boolean) {
   const configDefaults = {
     '@context': 'https://linkedsoftwaredependencies.org/bundles/npm/@ldf/server/^3.0.0/components/context.jsonld',
     '@id': 'urn:ldf-server:my',
     'import': 'preset-qpf:config-defaults.json',
   };
 
-  const configOld: any = JSON.parse(fs.readFileSync(configFile) as any);
-  let config: any = configOld;
+  const configOld: Record<string, any> = JSON.parse(fs.readFileSync(configFile).toString());
+  let config: Record<string, any> = configOld;
 
   if ('@context' in configOld) {
     process.stderr.write('The config file already appears to be updated to 3.x.x, aborting.\n');
@@ -154,6 +158,6 @@ function migrateConfig(configFile: any, updateFile: any) {
     process.stdout.write(JSON.stringify(config, null, '  ') + '\n');
 }
 
-function datasourcePathToId(datasourcePath: any) {
+function datasourcePathToId(datasourcePath: string) {
   return 'urn:ldf-server:myDatasource' + datasourcePath;
 }

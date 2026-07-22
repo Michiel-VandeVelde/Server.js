@@ -16,8 +16,6 @@ let ViewCollectionError = Util.createErrorType('ViewCollectionError');
 
 // Creates a new ViewCollection
 class ViewCollection {
-  [key: string]: any;
-
   static ViewCollectionError = ViewCollectionError;
 
   protected _views: Record<string, View[]>;

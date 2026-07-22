@@ -1,8 +1,18 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
 
+import type { BufferedIterator } from 'asynciterator';
+
 // Escapes a string for use in a regular expression
 export function toRegExp(string: string) {
   return string.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
+}
+
+// Pushes an item into a BufferedIterator from outside the class.
+// `_push` is protected on asynciterator's BufferedIterator (meant for its own subclasses),
+// but this codebase's `_executeQuery` implementations push into it externally, predating
+// that guarantee — centralized here rather than repeating the cast in every datasource.
+export function pushToDestination<T>(destination: BufferedIterator<T>, item: T): void {
+  (destination as unknown as { _push(item: T): void })._push(item);
 }
 
 // The MIME type for plaintext

@@ -12,12 +12,14 @@ import type { ControllerOptions, LdfRequest, LdfResponse, ParsedRequestUrl } fro
 
 // Creates a new Controller
 class Controller {
-  [key: string]: any;
-
   protected _prefixes: Record<string, string>;
   protected _datasources: Record<string, Datasource>;
   protected _views: ViewCollection;
   protected _baseUrl: Partial<ParsedRequestUrl>;
+  // Set by specific controller subclasses (e.g. NotFoundController/_last, TimegateController/_first);
+  // checked generically by LinkedDataFragmentsServerWorker to order controllers.
+  public _last?: boolean;
+  public _first?: boolean;
 
   constructor(options?: ControllerOptions) {
     options = options || {};

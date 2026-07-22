@@ -4,6 +4,7 @@
 import Datasource = require('./Datasource');
 import { Store as N3Store, Quad } from 'n3';
 import { BufferedIterator } from 'asynciterator';
+import { pushToDestination } from '../Util';
 import type { MemoryDatasourceOptions, Query } from '../types';
 
 // Creates a new MemoryDatasource
@@ -48,12 +49,9 @@ class MemoryDatasource extends Datasource {
         quads = this._quadStore.getQuads(query.subject ?? null, query.predicate ?? null, query.object ?? null, query.graph ?? null);
     // Send the metadata
     destination.setProperty('metadata', { totalCount: quads.length, hasExactCount: true });
-    // Send the requested subset of quads.
-    // `_push` is protected on BufferedIterator (meant for use by its own subclasses), but this
-    // codebase's `_executeQuery` pattern predates that guarantee and pushes into it externally.
-    const pushableDestination = destination as unknown as { _push(quad: Quad): void };
+    // Send the requested subset of quads
     for (let i = offset, l = Math.min(offset + limit, quads.length); i < l; i++)
-      pushableDestination._push(quads[i]);
+      pushToDestination(destination, quads[i]);
     destination.close();
   }
 }

@@ -5,15 +5,23 @@ import LdfCore = require('@ldf/core');
 import * as fs from 'fs';
 import * as path from 'path';
 import { StreamParser } from 'n3';
+import type { ControllerOptions, LdfRequest, LdfResponse } from '@ldf/core/lib/types';
 
 const Controller = LdfCore.controllers.Controller;
 const Util = LdfCore.Util;
 
+interface SummaryControllerOptions extends ControllerOptions {
+  summaries?: { dir?: string; path?: string };
+}
+
 // Creates a new SummaryController
 class SummaryController extends Controller {
-  [key: string]: any;
+  protected _enabled?: string;
+  protected _summariesFolder: string;
+  protected _summariesPath: string;
+  protected _matcher: RegExp;
 
-  constructor(options?: any) {
+  constructor(options?: SummaryControllerOptions) {
     options = options || {};
     super(options);
     // Settings for data summaries
@@ -25,21 +33,21 @@ class SummaryController extends Controller {
     this._matcher = new RegExp('^' + Util.toRegExp(this._summariesPath) + '(.+)$');
   }
 
-  override _handleRequest(request: any, response: any, next: any) {
+  override _handleRequest(request: LdfRequest, response: LdfResponse, next: (error?: Error) => void) {
     if (!this._enabled)
       return next();
 
-    let summaryMatch = this._matcher && this._matcher.exec(request.url), datasource;
+    let summaryMatch = this._matcher && this._matcher.exec(request.url!), datasource;
     if (datasource = summaryMatch && summaryMatch[1]) {
       let summaryFile = path.join(this._summariesFolder, datasource + '.ttl');
 
       // Read summary triples from file
-      let streamParser = new StreamParser({ blankNodePrefix: '', baseIRI: this._baseUrl.pathname } as any),
+      let streamParser = new StreamParser({ blankNodePrefix: '', baseIRI: (this._baseUrl.pathname as string) || undefined }),
           inputStream = fs.createReadStream(summaryFile);
 
       // If the summary cannot be read, invoke the next controller without error
-      inputStream.on('error', (error: any) => { next(); });
-      inputStream.pipe(streamParser as any);
+      inputStream.on('error', (error: Error) => { next(); });
+      inputStream.pipe(streamParser);
 
       // Set caching
       response.setHeader('Cache-Control', 'public,max-age=604800'); // 14 days

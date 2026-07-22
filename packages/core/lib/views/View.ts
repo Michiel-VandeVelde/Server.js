@@ -7,8 +7,6 @@ import type { ContentTypeMatch, LdfRequest, LdfResponse, RenderDone, ViewSetting
 
 // Creates a view with the given name
 class View {
-  [key: string]: any;
-
   public name: string;
   // Assigned via `_parseContentTypes`, always called from the constructor.
   public supportedContentTypes!: ContentTypeMatch[];
