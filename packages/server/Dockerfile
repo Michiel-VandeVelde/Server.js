@@ -4,9 +4,10 @@ LABEL description="Triple Pattern Fragment Server."
 ENV dir /var/www/@ldf/server
 
 # Copy the server files
-# Note: bin/*.js and bin/*.d.ts are compiled output (gitignored) and must already
-# exist in this build context; the monorepo-level `yarn install` (which runs the
-# `prepare`/`build` scripts) produces them before this image is built.
+# Note: once this package's bin scripts are converted to TypeScript, bin/*.js and
+# bin/*.d.ts become compiled output (gitignored) that must already exist in this
+# build context — the CI docker job runs `yarn run build` at the repo root before
+# invoking this Dockerfile for exactly that reason.
 COPY components ${dir}/components/
 COPY config ${dir}/config/
 COPY bin ${dir}/bin/
