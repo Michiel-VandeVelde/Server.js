@@ -5,16 +5,18 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: '**/node_modules'
           key: ${{ runner.os }}-lint-modules-${{ hashFiles('**/yarn.lock') }}
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v4
         with:
-          node-version: 14.x
+          node-version: 22.x
       - run: yarn install
+      - run: yarn run build
       - run: yarn run lint
+      - run: yarn run typecheck-test
 
   test:
     runs-on: ${{ matrix.os }}
@@ -22,24 +24,26 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         node-version:
-          - 12.x
-          - 14.x
-          - 16.x
+          - 20.x
+          - 22.x
+          - 24.x
     steps:
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
       - name: Ensure line endings are consistent
         run: git config --global core.autocrlf input
       - name: Check out repository
-        uses: actions/checkout@v2
-      - uses: actions/cache@v2
+        uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: '**/node_modules'
           key: ${{ runner.os }}-test-modules-${{ hashFiles('**/yarn.lock') }}
       - name: Install dependencies
         run: yarn install
+      - name: Build
+        run: yarn run build
       - name: Run tests
         run: yarn run test-ci
       - name: Submit coverage results
@@ -66,13 +70,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Use Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: '14.x'
+          node-version: '22.x'
       - name: Check out repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Load cache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: '**/node_modules'
           key: ${{ runner.os }}-docker-modules-v1-${{ hashFiles('**/yarn.lock') }}
