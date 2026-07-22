@@ -1,5 +1,4 @@
 {
-  "all": true,
   "extension": [".ts"],
   "include": ["packages/*/lib/**/*.ts"],
   "exclude": ["packages/*/test/**", "**/*.d.ts"],
