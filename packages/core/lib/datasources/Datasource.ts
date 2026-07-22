@@ -3,7 +3,7 @@
 
 import * as fs from 'fs';
 import UrlData = require('../UrlData');
-import { BufferedIterator } from 'asynciterator';
+import { AsyncIterator, BufferedIterator } from 'asynciterator';
 import { EventEmitter } from 'events';
 import { stringToTerm } from 'rdf-string';
 import type { NamedNode, Quad } from 'n3';
@@ -11,8 +11,6 @@ import type { DatasourceOptions, Query } from '../types';
 
 // Creates a new Datasource
 class Datasource extends EventEmitter {
-  [key: string]: any;
-
   public urlData: UrlData;
   public title?: string;
   public id?: string;
@@ -31,6 +29,8 @@ class Datasource extends EventEmitter {
   public dataFactory!: NonNullable<DatasourceOptions['dataFactory']>;
   public initialized: boolean;
   public supportedFeatures: Readonly<Record<string, boolean>>;
+  // Set by IndexDatasource; checked generically by feature-qpf's HTML view to pick a template.
+  public role?: string;
   protected _datasourcePath: string;
   protected _skolemizeBlacklist: Record<string, boolean>;
   protected _request!: NonNullable<DatasourceOptions['request']>;
@@ -138,12 +138,19 @@ class Datasource extends EventEmitter {
     }
   }
 
-  // Selects the quads that match the given query, returning a quad stream
-  select(query: Query, onError?: (error: Error) => void) {
-    if (!this.initialized)
-      return onError && onError(new Error('The datasource is not initialized yet'));
-    if (!this.supportsQuery(query))
-      return onError && onError(new Error('The datasource does not support the given query'));
+  // Selects the quads that match the given query, returning a quad stream.
+  // Returns undefined (rather than throwing) when the datasource isn't initialized yet or
+  // doesn't support the query — callers that have already checked supportsQuery/initialized
+  // may assert the result non-null; others must handle the undefined case via onError.
+  select(query: Query, onError?: (error: Error) => void): AsyncIterator<Quad> | undefined {
+    if (!this.initialized) {
+      onError && onError(new Error('The datasource is not initialized yet'));
+      return undefined;
+    }
+    if (!this.supportsQuery(query)) {
+      onError && onError(new Error('The datasource does not support the given query'));
+      return undefined;
+    }
     query = { ...query };
     const dataFactory = this.dataFactory!;
 

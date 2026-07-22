@@ -42,7 +42,9 @@ class AssetsController extends Controller {
       let filename = path.join(assetsFolder, name), stats = fs.statSync(filename);
       // Read an asset file into memory
       if (stats.isFile()) {
-        let assetType = mime.getType(filename) || '';
+        let assetType = mime.getType(filename);
+        if (!assetType)
+          throw new Error(`Could not determine the MIME type of asset ${filename}`);
         this._assets[assetsPath + name.replace(/[.][^.]+$/, '')] = {
           type: assetType.indexOf('text/') ? assetType : assetType + ';charset=utf-8',
           contents: fs.readFileSync(filename),

@@ -11,7 +11,7 @@ import type {
   Quad_Predicate as QuadPredicate,
   Quad_Subject as QuadSubject,
 } from 'n3';
-import type request = require('request');
+import type { EventEmitter } from 'events';
 import type UrlData = require('./UrlData');
 import type Datasource = require('./datasources/Datasource');
 import type Controller = require('./controllers/Controller');
@@ -33,6 +33,15 @@ export interface Query {
   limit?: number;
   offset?: number;
 }
+
+// The subset of the `request` package's call signature Datasource#_fetch and datasource-sparql
+// actually use (an options object, an optional error-first callback, an EventEmitter-like stream
+// out) — not the full `request` module with its static helpers (.get, .post, .jar, .defaults, ...),
+// which no caller here needs.
+export type RequestFunction = (
+  options: { url: string; headers?: Record<string, string>; timeout?: number },
+  callback?: (error: any, response?: any, body?: any) => void,
+) => EventEmitter;
 
 // The parsed URL Controller attaches to incoming requests (see Controller#handleRequest),
 // reusing Node's own UrlObject shape rather than hand-rolling one.
@@ -64,7 +73,7 @@ export interface DatasourceOptions {
   licenseUrl?: string;
   copyright?: string;
   homepage?: string;
-  request?: typeof request;
+  request?: RequestFunction;
   dataFactory?: DataFactoryInterface;
   graph?: string;
   quads?: boolean;
@@ -124,6 +133,13 @@ export interface ViewSettings {
   views?: ViewCollection | View[];
   urlData?: UrlData;
   [key: string]: unknown;
+}
+
+// The `metadata` property Datasource#_executeQuery implementations set on their destination
+// stream (see BufferedIterator#setProperty('metadata', ...)), read back via #getProperty.
+export interface DatasourceMetadata {
+  totalCount: number;
+  hasExactCount: boolean;
 }
 
 // A single content type a view supports (see View#_parseContentTypes).

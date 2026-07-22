@@ -4,16 +4,23 @@
 import LdfCore = require('@ldf/core');
 import * as fs from 'fs';
 import * as path from 'path';
-import { Parser as N3Parser } from 'n3';
+import { Parser as N3Parser, Quad } from 'n3';
 import { spawn } from 'child_process';
+import type { BufferedIterator } from 'asynciterator';
+import type { Query } from '@ldf/core/lib/types';
+import type { ExternalHdtDatasourceOptions } from '../types';
 
 const Datasource = LdfCore.datasources.Datasource;
+const { pushToDestination } = LdfCore.Util;
 
 let hdtUtility = path.join(__dirname, '../../node_modules/.bin/hdt');
 
 // Creates a new ExternalHdtDatasource
 class ExternalHdtDatasource extends Datasource {
-  constructor(options?: any) {
+  protected _options: ExternalHdtDatasourceOptions;
+  protected _hdtFile: string;
+
+  constructor(options?: ExternalHdtDatasourceOptions) {
     let supportedFeatureList = ['quadPattern', 'triplePattern', 'limit', 'offset', 'totalCount'];
     super(options, supportedFeatureList);
 
@@ -34,7 +41,7 @@ class ExternalHdtDatasource extends Datasource {
   }
 
   // Writes the results of the query to the given quad stream
-  override _executeQuery(query: any, destination: any) {
+  override _executeQuery(query: Query, destination: BufferedIterator<Quad>) {
     // Only the default graph has results
     if (query.graph && query.graph.termType !== 'DefaultGraph') {
       destination.setProperty('metadata', { totalCount: 0, hasExactCount: true });
@@ -47,31 +54,32 @@ class ExternalHdtDatasource extends Datasource {
         hdt = spawn(hdtUtility, [
           '--query', (query.subject   || '?s') + ' ' +
           (query.predicate || '?p') + ' ' + (query.object || '?o'),
-          '--offset', offset, '--limit', limit, '--format', 'turtle',
+          '--offset', String(offset), '--limit', String(limit), '--format', 'turtle',
           '--', hdtFile,
         ], { stdio: ['ignore', 'pipe', 'ignore'] });
     // Parse the result triples
-    hdt.stdout.setEncoding('utf8');
+    hdt.stdout!.setEncoding('utf8');
     let parser = new N3Parser(), tripleCount = 0, estimatedTotalCount = 0, hasExactCount = true;
-    parser.parse(hdt.stdout, (error, triple) => {
+    parser.parse(hdt.stdout!, (error, triple) => {
       if (error)
         destination.emit('error', new Error('Invalid query result: ' + error.message));
       else if (triple)
-        tripleCount++, destination._push(triple);
+        tripleCount++, pushToDestination(destination, triple);
       else {
         // Ensure the estimated total count is as least as large as the number of triples
         if (tripleCount && estimatedTotalCount < offset + tripleCount)
-          estimatedTotalCount = offset + (tripleCount < query.limit ? tripleCount : 2 * tripleCount);
+          estimatedTotalCount = offset + (tripleCount < query.limit! ? tripleCount : 2 * tripleCount);
         destination.setProperty('metadata', { totalCount: estimatedTotalCount, hasExactCount: hasExactCount });
         destination.close();
       }
     });
-    (parser as any)._prefixes._ = '_:'; // Ensure blank nodes are named consistently
+    // `_prefixes` is a private N3.Parser field, not exposed by @types/n3.
+    (parser as unknown as { _prefixes: Record<string, string> })._prefixes._ = '_:'; // Ensure blank nodes are named consistently
 
     // Extract the estimated number of total matches from the first (comment) line
-    hdt.stdout.once('data', (header) => {
-      estimatedTotalCount = parseInt(header.match(/\d+/), 10) || 0;
-      hasExactCount = header.indexOf('estimated') < 0;
+    hdt.stdout!.once('data', (header: Buffer | string) => {
+      estimatedTotalCount = parseInt(header.toString().match(/\d+/)?.[0] ?? '0', 10) || 0;
+      hasExactCount = header.toString().indexOf('estimated') < 0;
     });
 
     // Report query errors

@@ -4,14 +4,21 @@
 import LdfCore = require('@ldf/core');
 import url = require('url');
 import _ = require('lodash');
+import type Datasource = require('@ldf/core/lib/datasources/Datasource');
+import type Controller_ = require('@ldf/core/lib/controllers/Controller');
+import type { LdfRequest, LdfResponse, Query, RouterRequest } from '@ldf/core/lib/types';
+import type { Quad } from 'n3';
+import type { FragmentInfo, FragmentMetadata, FragmentQuery, FragmentRouter, QuadPatternFragmentsControllerOptions } from '../types';
 
 const Controller = LdfCore.controllers.Controller;
 
 // Creates a new QuadPatternFragmentsController
 class QuadPatternFragmentsController extends Controller {
-  [key: string]: any;
+  protected _routers: FragmentRouter[];
+  protected _extensions: Controller_[];
+  public viewName: string;
 
-  constructor(options?: any) {
+  constructor(options?: QuadPatternFragmentsControllerOptions) {
     options = options || {};
     super(options);
     this._routers = options.routers || [];
@@ -21,37 +28,37 @@ class QuadPatternFragmentsController extends Controller {
   }
 
   // The required features the given datasource must have
-  supportsDatasource(datasource: any) {
+  supportsDatasource(datasource: Datasource) {
     return datasource.supportedFeatures.triplePattern ||
           datasource.supportedFeatures.quadPattern;
   }
 
   // Try to serve the requested fragment
-  override _handleRequest(request: any, response: any, next: any) {
+  override _handleRequest(request: LdfRequest, response: LdfResponse, next: (error?: Error) => void) {
     // Create the query from the request by calling the fragment routers
-    let requestParams = { url: request.parsedUrl, headers: request.headers },
-        query: any = this._routers.reduce((query: any, router: any) => {
+    let requestParams: RouterRequest = { url: request.parsedUrl as RouterRequest['url'], headers: request.headers },
+        query: Query = this._routers.reduce((query: Query, router: FragmentRouter) => {
           try { router.extractQueryParams(requestParams, query); }
           catch (e) { /* ignore routing errors */ }
           return query;
-        }, { features: [] });
+        }, { features: {} } as Query);
 
     // Execute the query on the data source
-    let datasource = query.features.datasource && this._datasources[query.datasource];
-    delete query.features.datasource;
+    let datasource = query.features!.datasource && this._datasources[query.datasource!];
+    delete query.features!.datasource;
     if (!datasource || !datasource.supportsQuery(query) ||
       !this.supportsDatasource(datasource))
       return next();
 
     // Generate the query result
     let view = this._negotiateView(this.viewName, request, response),
-        settings: any = this._createFragmentMetadata(request, query, datasource);
+        settings = this._createFragmentMetadata(request, query, datasource);
     settings.results = datasource.select(query,
-      (error: any) => { error && next(error); });
+      (error?: Error) => { error && next(error); }) as import('asynciterator').AsyncIterator<Quad> | undefined;
 
     // Execute the extensions and render the query result
     let extensions = this._extensions, extensionId = 0;
-    (function nextExtension(error?: any) {
+    (function nextExtension(error?: Error) {
       // Log a possible error with the previous extension
       if (error)
         process.stderr.write(error.stack + '\n');
@@ -65,43 +72,44 @@ class QuadPatternFragmentsController extends Controller {
   }
 
   // Create the template URL for requesting quad patterns
-  _createTemplateUrl(datasourceUrl: any, supportsQuads: any) {
+  _createTemplateUrl(datasourceUrl: string, supportsQuads: boolean) {
     return datasourceUrl + (!supportsQuads ? '{?subject,predicate,object}' :
       '{?subject,predicate,object,graph}');
   }
 
   // Create parameterized pattern string for quad patterns
-  _createPatternString(query: any, supportsQuads: any) {
+  _createPatternString(query: Query, supportsQuads: boolean) {
     let subject = query.subject, predicate = query.predicate,
-        object = query.object, graph: any = '';
+        graph: string = '';
     // Serialize subject and predicate IRIs or variables
-    subject   = subject   ? '<' + query.subject.value   + '> ' : '?s ';
-    predicate = predicate ? '<' + query.predicate.value + '> ' : '?p ';
+    let subjectStr   = subject   ? '<' + query.subject!.value   + '> ' : '?s ';
+    let predicateStr = predicate ? '<' + query.predicate!.value + '> ' : '?p ';
     // Serialize object IRI, literal, or variable
+    let objectStr: string;
     if (query.object && query.object.termType === 'NamedNode')
-      object = '<' + query.object.value + '> ';
+      objectStr = '<' + query.object.value + '> ';
     else
-      object = query.object ? query.object.value : '?o';
+      objectStr = query.object ? query.object.value : '?o';
     // Serialize graph IRI default graph, or variable
     if (supportsQuads) {
-      graph = query.graph;
-      if (graph && graph.termType === 'DefaultGraph') graph = ' @default';
-      else if (graph)   graph = ' <' + graph.value + '>';
+      let graphTerm = query.graph;
+      if (graphTerm && graphTerm.termType === 'DefaultGraph') graph = ' @default';
+      else if (graphTerm)   graph = ' <' + graphTerm.value + '>';
       else              graph = ' ?g';
     }
     // Join them in a pattern
-    return '{ ' + subject + predicate + object + graph + '. }';
+    return '{ ' + subjectStr + predicateStr + objectStr + graph + '. }';
   }
 
   // Creates metadata about the requested fragment
-  _createFragmentMetadata(request: any, query: any, datasourceSettings: any): any {
+  _createFragmentMetadata(request: LdfRequest, query: Query, datasourceSettings: Datasource): FragmentMetadata {
     // TODO: these URLs should be generated by the routers
-    let requestUrl = request.parsedUrl,
+    let requestUrl = request.parsedUrl!,
         // maintain the originally requested query string to avoid encoding differences
-        origQuery = request.url.replace(/[^?]+/, ''),
+        origQuery = request.url!.replace(/[^?]+/, ''),
         pageUrl = url.format(requestUrl).replace(/\?.*/, origQuery),
-        paramsNoPage = _.omit(requestUrl.query, 'page'),
-        currentPage = parseInt(requestUrl.query.page, 10) || 1,
+        paramsNoPage = _.omit(requestUrl.query as Record<string, unknown>, 'page') as import('querystring').ParsedUrlQueryInput,
+        currentPage = parseInt((requestUrl.query as { page?: string }).page!, 10) || 1,
         datasourceUrl = url.format(_.omit(requestUrl, 'query')),
         fragmentUrl = url.format({ ...requestUrl, query: paramsNoPage }),
         fragmentPageUrlBase = fragmentUrl + (/\?/.test(fragmentUrl) ? '&' : '?') + 'page=',
@@ -109,7 +117,15 @@ class QuadPatternFragmentsController extends Controller {
 
     // Generate a textual representation of the pattern
     let supportsQuads = datasourceSettings.supportedFeatures.quadPattern || false;
-    query.patternString = this._createPatternString(query, supportsQuads);
+    (query as FragmentQuery).patternString = this._createPatternString(query, supportsQuads);
+
+    let fragment: FragmentInfo = {
+      url: fragmentUrl,
+      pageUrl: pageUrl,
+      firstPageUrl: fragmentPageUrlBase + '1',
+      nextPageUrl: fragmentPageUrlBase + (currentPage + 1),
+      previousPageUrl: currentPage > 1 ? fragmentPageUrlBase + (currentPage - 1) : null,
+    };
 
     return {
       datasource: _.assign(datasourceSettings, {
@@ -118,14 +134,8 @@ class QuadPatternFragmentsController extends Controller {
         templateUrl: this._createTemplateUrl(datasourceUrl, supportsQuads),
         supportsQuads: supportsQuads,
       }),
-      fragment: {
-        url: fragmentUrl,
-        pageUrl: pageUrl,
-        firstPageUrl: fragmentPageUrlBase + '1',
-        nextPageUrl: fragmentPageUrlBase + (currentPage + 1),
-        previousPageUrl: currentPage > 1 ? fragmentPageUrlBase + (currentPage - 1) : null,
-      },
-      query: query,
+      fragment,
+      query,
       prefixes: this._prefixes,
       datasources: this._datasources,
     };

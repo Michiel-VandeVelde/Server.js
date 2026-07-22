@@ -30,7 +30,7 @@ describe('SparqlDatasource', () => {
 
   describe('A SparqlDatasource instance', () => {
     let request = sinon.stub();
-    let datasource = new SparqlDatasource({ dataFactory, endpoint: 'http://ex.org/sparql', request: request });
+    let datasource = new SparqlDatasource({ dataFactory, endpoint: 'http://ex.org/sparql', request });
     datasource.initialize();
 
     it('should indicate support for its features', () => {
@@ -261,7 +261,7 @@ describe('SparqlDatasource', () => {
 
   describe('A SparqlDatasource instance with forceTypedLiterals true', () => {
     let request = sinon.stub();
-    let datasource = new SparqlDatasource({ dataFactory, endpoint: 'http://ex.org/sparql', request: request, forceTypedLiterals: true });
+    let datasource = new SparqlDatasource({ dataFactory, endpoint: 'http://ex.org/sparql', request, forceTypedLiterals: true });
     datasource.initialize();
 
     itShouldExecute(datasource, request,

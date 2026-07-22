@@ -29,10 +29,14 @@ interface LinkedDataFragmentsServerInstance extends http.Server {
 
 // Creates a new LinkedDataFragmentsServer
 class LinkedDataFragmentsServer {
+  // Unlike the other core base classes, this class's own instance shape is never actually used:
+  // the constructor always returns a different object (see below), and its prototype is patched
+  // at runtime with methods copied from below — both need this index signature to type-check.
   [key: string]: any;
 
   constructor(options?: LinkedDataFragmentsServerOptions) {
-    // Create the HTTP(S) server
+    // Create the HTTP(S) server; `server` ends up holding either an http.Server or an
+    // https.Server, plus the dynamically-assigned fields below, so it can't be precisely typed.
     let server: any, sockets = 0;
     let urlData = options && options.urlData ? options.urlData : new UrlData();
     switch (urlData.protocol) {
@@ -129,7 +133,8 @@ LinkedDataFragmentsServer.prototype._reportError = function (this: LinkedDataFra
   // If no request or response is available, the server failed outside of a request; don't recover
   if (!response) {
     error = request as Error;
-    request = response = null as any;
+    request = null;
+    response = undefined;
     this._log('Fatal error, exiting process\n', error.stack);
     return process.exit(-1);
   }
@@ -145,7 +150,7 @@ LinkedDataFragmentsServer.prototype._reportError = function (this: LinkedDataFra
     response.error = error;
     this._errorController.handleRequest(request as LdfRequest, response, _.noop);
   }
-  catch (responseError: any) { this._log(responseError.stack); }
+  catch (responseError) { this._log((responseError as Error).stack); }
 };
 
 // Stops the server

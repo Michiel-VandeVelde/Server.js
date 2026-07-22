@@ -4,6 +4,42 @@
 import * as N3 from 'n3';
 import * as fs from 'fs';
 import * as path from 'path';
+import type { DatasourceMetadata } from '@ldf/core/lib/types';
+
+// A raw string-based pseudo-triple, as used throughout this script (predating proper RDF/JS terms).
+interface RawTriple {
+  subject: string;
+  predicate: string;
+  object: string;
+}
+
+interface DatasourceConfig {
+  type: string;
+  settings?: Record<string, unknown>;
+}
+
+interface SummaryConfig {
+  baseURL?: string;
+  datasources?: Record<string, DatasourceConfig>;
+  [key: string]: unknown;
+}
+
+interface Capability {
+  subjectAuth: Record<string, null>;
+  objectAuth: Record<string, null>;
+}
+
+// The minimal Datasource-like surfaces this script relies on.
+interface GeneratorStream {
+  on(event: 'data' | 'end', listener: (...args: any[]) => void): GeneratorStream;
+  getProperty(name: 'metadata', callback: (metadata: DatasourceMetadata) => void): GeneratorStream;
+  removeAllListeners(): void;
+}
+
+interface GeneratorDatasource {
+  supportsQuery(query: unknown): boolean;
+  select(query: unknown, onError: (error: unknown) => void): GeneratorStream;
+}
 
 let regex = /^(http[s]?:\/?\/?[^:\/\s]+\/).*/;
 
@@ -19,19 +55,19 @@ if (args.length < 1 || args.length > 2) {
 
 // Init variables
 let configFile = args[0],
-    config: any = JSON.parse(fs.readFileSync(configFile) as any),
+    config: SummaryConfig = JSON.parse(fs.readFileSync(configFile).toString()),
     datasources = config.datasources || {},
-    datasourceNames: any[] = args[1] ? [args[1]] : (datasources && Object.keys(datasources));
+    datasourceNames: string[] = args[1] ? [args[1]] : Object.keys(datasources);
 
 // Configure preset URLs
 let baseURL = config.baseURL ? config.baseURL.replace(/\/?$/, '/') : '/',
-    baseURLRoot = baseURL.match(/^(?:https?:\/\/[^\/]+)?/)[0],
+    baseURLRoot = baseURL.match(/^(?:https?:\/\/[^\/]+)?/)![0],
     baseURLPath = baseURL.substr(baseURLRoot.length),
     datasourceBase = baseURLPath.substr(1);
 
-generate(datasourceNames.pop());
+generate(datasourceNames.pop()!);
 
-function generate(datasourceName: any) {
+function generate(datasourceName: string) {
   // Create data source
   let datasourceConfig = datasources[datasourceName];
 
@@ -40,7 +76,7 @@ function generate(datasourceName: any) {
     let datasourcePath = datasourceBase + encodeURI(datasourceName);
 
     // Retrieve the data source class and settings
-    let Datasource: any = require(path.join('../lib/datasources/', datasourceConfig.type)),
+    let Datasource: new (settings: Record<string, unknown>) => GeneratorDatasource = require(path.join('../lib/datasources/', datasourceConfig.type)),
         settings = { ...config, ...(datasourceConfig.settings || {}) };
 
     // Create the data source
@@ -49,12 +85,12 @@ function generate(datasourceName: any) {
 
     let writer = new N3.Writer({ prefixes: { ds: DS_NS, rdf: RDF_NS } });
 
-    fromDataSource(url, datasource, (triple: any) => {
-      writer.addQuad(triple);
+    fromDataSource(url, datasource, (triple: RawTriple) => {
+      writer.addQuad(triple as unknown as N3.Quad);
     }, () => {
-      writer.end((error: any, result: any) => {
-        fs.appendFileSync(datasourceName + '.ttl', result);
-        (datasourceNames.length > 0) && generate(datasourceNames.pop());
+      writer.end((error, result) => {
+        fs.appendFileSync(datasourceName + '.ttl', result!);
+        (datasourceNames.length > 0) && generate(datasourceNames.pop()!);
       });
     });
   }
@@ -64,8 +100,8 @@ function generate(datasourceName: any) {
   }
 }
 
-function fromDataSource(uri: any, datasource: any, callback: any, end: any, chunksize?: any) {
-  let capabilities: any = Object.create(null);
+function fromDataSource(uri: string, datasource: GeneratorDatasource, callback: (triple: RawTriple) => void, end: () => void, chunksize?: number) {
+  let capabilities: Record<string, Capability> = Object.create(null);
 
   // Process dataset in batches when possible
   if (datasource.supportsQuery({ features: { limit: true, offset: true } }))
@@ -78,48 +114,47 @@ function fromDataSource(uri: any, datasource: any, callback: any, end: any, chun
   }
 
   // Processes DataSource in chunks
-  function processSet(limit: any, offset?: any) {
+  function processSet(limit: number, offset?: number) {
     offset = offset || 0;
     let count = 0;
 
-    let stream: any = datasource.select({ limit: limit, offset: offset }, console.error)
-      .getProperty('metadata', (metadata: any) => {
-        let progress = Math.round((offset / metadata.totalCount) * 100);
-        console.log(progress);
+    let stream: GeneratorStream | null = datasource.select({ limit: limit, offset: offset }, console.error);
+    stream.getProperty('metadata', (metadata) => {
+      let progress = Math.round((offset! / metadata.totalCount) * 100);
+      console.log(progress);
 
-        stream.on('data', (triple: any) => {
-          count++;
-          extractSummary(triple);
-          triple = null;
-        });
-
-        stream.on('end', () => {
-          stream.removeAllListeners();
-          stream = null;
-
-          if (count < limit)
-            endSummary();
-          else
-            setImmediate(() => { processSet(limit, offset + limit); });
-        });
+      stream!.on('data', (triple: RawTriple) => {
+        count++;
+        extractSummary(triple);
       });
+
+      stream!.on('end', () => {
+        stream!.removeAllListeners();
+        stream = null;
+
+        if (count < limit)
+          endSummary();
+        else
+          setImmediate(() => { processSet(limit, offset! + limit); });
+      });
+    });
   }
 
-  function extractSummary(triple: any) {
+  function extractSummary(triple: RawTriple) {
     // Check is a capability already exists
     if (!capabilities[triple.predicate])
       capabilities[triple.predicate] = { subjectAuth: {}, objectAuth: {} };
 
-    let subjectAuth: any = regex.exec(triple.subject),
-        objectAuth: any = regex.exec(triple.object);
+    let subjectAuthMatch = regex.exec(triple.subject),
+        objectAuthMatch = regex.exec(triple.object);
 
-    if (subjectAuth !== null) {
-      subjectAuth = subjectAuth[1].toLowerCase();
+    if (subjectAuthMatch !== null) {
+      let subjectAuth = subjectAuthMatch[1].toLowerCase();
       capabilities[triple.predicate].subjectAuth[subjectAuth] = null;
     }
 
-    if (objectAuth !== null) {
-      objectAuth = triple.predicate === RDF_NS + 'type' ? triple.object : objectAuth[1].toLowerCase();
+    if (objectAuthMatch !== null) {
+      let objectAuth = triple.predicate === RDF_NS + 'type' ? triple.object : objectAuthMatch[1].toLowerCase();
       capabilities[triple.predicate].objectAuth[objectAuth] = null;
     }
   }

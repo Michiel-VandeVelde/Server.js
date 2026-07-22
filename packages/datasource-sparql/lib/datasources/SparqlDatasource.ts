@@ -2,19 +2,35 @@
 /* A SparqlDatasource provides queryable access to a SPARQL endpoint. */
 
 import LdfCore = require('@ldf/core');
-import { SparqlJsonParser } from 'sparqljson-parse';
+import { SparqlJsonParser, IBindings } from 'sparqljson-parse';
 import LRU = require('lru-cache');
+import type { Term, Literal, Quad } from 'n3';
+import type { BufferedIterator } from 'asynciterator';
+import type { DatasourceMetadata, DatasourceOptions, Query } from '@ldf/core/lib/types';
 
 const Datasource = LdfCore.datasources.Datasource;
+const { pushToDestination } = LdfCore.Util;
 
 let DEFAULT_COUNT_ESTIMATE = { totalCount: 1e9, hasExactCount: false };
 let ENDPOINT_ERROR = 'Error accessing SPARQL endpoint';
 let INVALID_JSON_RESPONSE = 'The endpoint returned an invalid SPARQL results JSON response.';
 const xsd  = 'http://www.w3.org/2001/XMLSchema#';
 
+interface SparqlDatasourceOptions extends DatasourceOptions {
+  endpoint?: string;
+  forceTypedLiterals?: boolean;
+}
+
 // Creates a new SparqlDatasource
 class SparqlDatasource extends Datasource {
-  constructor(options?: any) {
+  protected _countCache: LRU<string, number>;
+  protected _resolvingCountQueries: Record<string, boolean>;
+  protected _sparqlJsonParser: SparqlJsonParser;
+  protected _endpoint: string;
+  protected _endpointUrl: string;
+  protected _forceTypedLiterals?: boolean;
+
+  constructor(options?: SparqlDatasourceOptions) {
     let supportedFeatureList = ['quadPattern', 'triplePattern', 'limit', 'offset', 'totalCount'];
     super(options, supportedFeatureList);
 
@@ -31,7 +47,7 @@ class SparqlDatasource extends Datasource {
   }
 
   // Writes the results of the query to the given triple stream
-  override _executeQuery(query: any, destination: any) {
+  override _executeQuery(query: Query, destination: BufferedIterator<Quad>) {
     // Create the HTTP request
     let sparqlPattern = this._createQuadPattern(query), self = this,
         selectQuery = this._createSelectQuery(sparqlPattern, query.offset, query.limit),
@@ -42,22 +58,22 @@ class SparqlDatasource extends Datasource {
     // Fetch and parse matching triples using JSON responses
     let json = '';
     this._request(request, emitError)
-      .on('data', (data: any) => { json += data; })
+      .on('data', (data: Buffer | string) => { json += data; })
       .on('error', emitError)
       .on('end', () => {
         let response;
         try { response = JSON.parse(json); }
         catch (e) { return emitError({ message: INVALID_JSON_RESPONSE }); }
 
-        response.results.bindings.forEach((binding: any) => {
-          binding = this._sparqlJsonParser.parseJsonBindings(binding);
+        response.results.bindings.forEach((rawBinding: unknown) => {
+          let binding: IBindings = this._sparqlJsonParser.parseJsonBindings(rawBinding);
           let triple = {
             subject:   binding.s || query.subject,
             predicate: binding.p || query.predicate,
             object:    binding.o || query.object,
             graph:     binding.g || query.graph,
           };
-          destination._push(triple);
+          pushToDestination(destination, triple as Quad);
         });
         destination.close();
       });
@@ -70,7 +86,7 @@ class SparqlDatasource extends Datasource {
 
     // Emits an error on the triple stream
     let errored = false;
-    function emitError(error: any) {
+    function emitError(error: { message: string } | null) {
       if (!error || errored) return;
       errored = true;
       destination.emit('error', new Error(ENDPOINT_ERROR + ' ' + self._endpoint + ': ' + error.message));
@@ -78,7 +94,7 @@ class SparqlDatasource extends Datasource {
   }
 
   // Retrieves the (approximate) number of triples that match the SPARQL pattern
-  _getPatternCount(sparqlPattern: any) {
+  _getPatternCount(sparqlPattern: string): Promise<DatasourceMetadata> {
     // Try to find a cache match
     let cache = this._countCache, count = cache.get(sparqlPattern);
     if (count)
@@ -99,7 +115,7 @@ class SparqlDatasource extends Datasource {
     return new Promise((resolve, reject) => {
       let csv = '';
       this._resolvingCountQueries[sparqlPattern] = true;
-      countResponse.on('data', (data: any) => { csv += data; });
+      countResponse.on('data', (data: Buffer | string) => { csv += data; });
       countResponse.on('end', () => {
         delete this._resolvingCountQueries[sparqlPattern];
         let countMatch = csv.match(/\d+/);
@@ -123,8 +139,8 @@ class SparqlDatasource extends Datasource {
   }
 
   // Creates a SELECT query from the given SPARQL pattern
-  _createSelectQuery(sparqlPattern: any, offset: any, limit: any) {
-    let query = ['SELECT * WHERE', sparqlPattern];
+  _createSelectQuery(sparqlPattern: string, offset?: number, limit?: number) {
+    let query: (string | number)[] = ['SELECT * WHERE', sparqlPattern];
     // Even though the SPARQL spec indicates that
     // LIMIT and OFFSET might be meaningless without ORDER BY,
     // this doesn't seem a problem in practice.
@@ -135,12 +151,12 @@ class SparqlDatasource extends Datasource {
   }
 
   // Creates a SELECT COUNT(*) query from the given SPARQL pattern
-  _createCountQuery(sparqlPattern: any) {
+  _createCountQuery(sparqlPattern: string) {
     return 'SELECT (COUNT(*) AS ?c) WHERE ' + sparqlPattern;
   }
 
   // Creates a SPARQL pattern for the given triple pattern
-  _createQuadPattern(quad: any) {
+  _createQuadPattern(quad: Query) {
     let query = ['{'];
 
     // Encapsulate in graph if we are not querying the default graph
@@ -165,7 +181,7 @@ class SparqlDatasource extends Datasource {
     return query.push('}'), query.join('');
   }
 
-  _encodeObject(term: any): any {
+  _encodeObject(term: Term): string {
     switch (term.termType) {
     case 'NamedNode':
       return '<' + term.value + '>';
@@ -178,11 +194,11 @@ class SparqlDatasource extends Datasource {
     case 'Literal':
       return this._convertLiteral(term);
     default:
-      return null;
+      return '';
     }
   }
 
-  _convertLiteral(term: any): any {
+  _convertLiteral(term: Literal): string {
     if (!term)
       return '?o';
     else {

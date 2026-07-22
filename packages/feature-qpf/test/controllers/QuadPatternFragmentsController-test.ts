@@ -79,7 +79,7 @@ describe('QuadPatternFragmentsController', () => {
 
         expect(args[1]).to.be.an('object');
         expect(args[1]).to.have.property('features');
-        expect(args[1].features).to.be.an('array');
+        expect(args[1].features).to.be.an('object');
       });
 
       it('should call the second router with the same request and query', () => {
@@ -192,7 +192,7 @@ describe('QuadPatternFragmentsController', () => {
       sinon.spy(rdfView, 'render');
       controller = new QuadPatternFragmentsController({
         routers: [router],
-        datasources: { 'my-datasource': datasource },
+        datasources: { 'my-datasource': datasource as any },
         views: [htmlView, rdfView],
       });
       client = request.agent(new DummyServer(controller));
@@ -324,7 +324,7 @@ describe('QuadPatternFragmentsController', () => {
       };
       controller = new QuadPatternFragmentsController({
         routers: [router],
-        datasources: { 'my-datasource': datasource },
+        datasources: { 'my-datasource': datasource as any },
       });
       client = request.agent(new DummyServer(controller));
     });
@@ -429,7 +429,7 @@ describe('QuadPatternFragmentsController', () => {
       controller = new QuadPatternFragmentsController({
         routers: [router],
         views: [view],
-        datasources: { 'my-datasource': datasource },
+        datasources: { 'my-datasource': datasource as any },
       });
       client = request.agent(new DummyServer(controller));
     });

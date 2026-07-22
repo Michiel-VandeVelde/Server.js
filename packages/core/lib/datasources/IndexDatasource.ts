@@ -18,9 +18,9 @@ class IndexDatasource extends MemoryDatasource {
 
   constructor(options?: IndexDatasourceOptions) {
     super(options);
-    this._datasources = options ? options.datasources : {};
+    this._datasources = (options && options.datasources) || {};
     this.role = 'index';
-    delete this._datasources!['/'];
+    delete this._datasources['/'];
   }
 
   // Creates quads for each data source
