@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node", "mocha", "chai", "sinon-chai"],
+    "noEmit": true
+  },
+  "include": [
+    "packages/*/index.ts",
+    "packages/*/lib/**/*.ts",
+    "packages/*/bin/**/*.ts",
+    "packages/*/test/**/*.ts",
+    "test/**/*.ts",
+    "types/**/*.d.ts"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "packages/*/index.d.ts",
+    "packages/*/lib/**/*.d.ts",
+    "packages/*/bin/**/*.d.ts"
+  ],
+  "ts-node": {
+    "files": true
+  }
+}

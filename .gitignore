@@ -4,6 +4,21 @@ summaries
 *.log
 *.hdt.index*
 .nyc_output
+coverage
+
+# Compiled TypeScript output (compiled in-place next to .ts sources)
+packages/*/lib/**/*.js
+packages/*/lib/**/*.d.ts
+packages/*/lib/**/*.js.map
+packages/*/index.js
+packages/*/index.d.ts
+packages/*/index.js.map
+packages/*/bin/*.js
+packages/*/bin/*.d.ts
+packages/*/bin/*.js.map
+!packages/server/bin/ldf-server
+!packages/server/bin/ldf-server-migrate-config-3x
+!packages/feature-summary/bin/generate-summary
 
 # Ignore deployment configuration files, but keep defaults and examples
 config.json
@@ -14,3 +29,4 @@ config/*.json
 # Ignore dev environment files
 .idea
 .devcontainer
+.copier-answers.yml
