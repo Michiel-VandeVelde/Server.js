@@ -23,6 +23,9 @@ packages/*/bin/*.js.map
 # ignore genuine hand-written .js source in packages that haven't converted yet.
 # Instead, each package's own compiled-*.js patterns are appended below via
 # scripts/add-converted-package-ignores.sh once that package actually converts.
+packages/core/lib/**/*.js
+packages/core/index.js
+packages/core/bin/*.js
 
 # Ignore deployment configuration files, but keep defaults and examples
 config.json

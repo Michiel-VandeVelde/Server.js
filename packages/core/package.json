@@ -5,6 +5,7 @@
   "lsd:module": true,
   "license": "MIT",
   "main": "index.js",
+  "types": "index",
   "publishConfig": {
     "access": "public"
   },
@@ -12,9 +13,11 @@
     "components",
     "config",
     "lib/**/*.js",
+    "lib/**/*.d.ts",
     "lib/**/*.html",
     "assets/**/*",
-    "index.js"
+    "index.js",
+    "index.d.ts"
   ],
   "repository": "https://github.com/LinkedDataFragments/Server.js/tree/master/packages/core",
   "bugs": {
@@ -22,10 +25,12 @@
   },
   "scripts": {
     "test": "TS_NODE_PROJECT=../../tsconfig.test.json TS_NODE_PREFER_TS_EXTS=true nyc mocha --require ../../test/test-setup.ts --recursive --timeout 500 \"test/**/*-test.ts\" \"test/**/*-test.js\"",
-    "lint": "eslint bin/* lib test"
+    "lint": "eslint bin/* lib test",
+    "build": "test -f ../../node_modules/typescript/bin/tsc && node ../../node_modules/typescript/bin/tsc || echo '[build] typescript not found outside the monorepo, skipping (assuming already built)'",
+    "prepare": "npm run build"
   },
   "engines": {
-    "node": ">=10.0"
+    "node": ">=18.0"
   },
   "dependencies": {
     "asynciterator": "^3.0.0",

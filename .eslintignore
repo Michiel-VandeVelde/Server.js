@@ -13,3 +13,6 @@ packages/*/index.d.ts
 packages/*/index.js.map
 packages/*/bin/*.d.ts
 packages/*/bin/*.js.map
+packages/core/lib/**/*.js
+packages/core/index.js
+packages/core/bin/*.js
