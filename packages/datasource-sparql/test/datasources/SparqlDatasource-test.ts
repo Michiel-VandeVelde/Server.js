@@ -1,11 +1,14 @@
 /*! @license MIT ©2013-2016 Ruben Verborgh, Ghent University - imec */
-let SparqlDatasource = require('../../').datasources.SparqlDatasource;
+import ThisPackage = require('../../');
+import LdfCore = require('@ldf/core');
+import * as fs from 'fs';
+import * as path from 'path';
+import * as URL from 'url';
+import * as N3 from 'n3';
 
-let Datasource = require('@ldf/core').datasources.Datasource,
-    fs = require('fs'),
-    path = require('path'),
-    URL = require('url'),
-    dataFactory = require('n3').DataFactory;
+const SparqlDatasource = ThisPackage.datasources.SparqlDatasource;
+const Datasource = LdfCore.datasources.Datasource;
+const dataFactory = N3.DataFactory;
 
 let jsonResult = fs.readFileSync(path.join(__dirname, '../../../../test/assets/sparql-quads-response.json'));
 let countResult = '"c"\n12345678\n';
@@ -27,7 +30,7 @@ describe('SparqlDatasource', () => {
 
   describe('A SparqlDatasource instance', () => {
     let request = sinon.stub();
-    let datasource = new SparqlDatasource({ dataFactory, endpoint: 'http://ex.org/sparql', request: request });
+    let datasource = new SparqlDatasource({ dataFactory, endpoint: 'http://ex.org/sparql', request });
     datasource.initialize();
 
     it('should indicate support for its features', () => {
@@ -53,7 +56,7 @@ describe('SparqlDatasource', () => {
     });
 
     it('should throw an error when trying to execute an unsupported query', (done) => {
-      datasource.select({ features: { a: true, b: true } }, (error) => {
+      datasource.select({ features: { a: true, b: true } }, (error: any) => {
         error.should.be.an.instanceOf(Error);
         error.should.have.property('message', 'The datasource does not support the given query');
         done();
@@ -194,14 +197,14 @@ describe('SparqlDatasource', () => {
       null /* count should be cached, since this pattern already occurred above */);
 
     describe('when invalid JSON is returned in response to the data query', () => {
-      let result, error;
+      let result: any, error: any;
       before((done) => {
         request.reset();
-        request.onFirstCall().returns(test.createHttpResponse('invalid', 'application/sparql-results+json'));
-        request.onSecondCall().returns(test.createHttpResponse(countResult, 'text/csv'));
+        request.onFirstCall().returns((test as any).createHttpResponse('invalid', 'application/sparql-results+json'));
+        request.onSecondCall().returns((test as any).createHttpResponse(countResult, 'text/csv'));
         let query = { subject: dataFactory.namedNode('abcd'), features: { quadPattern: true } };
         result = datasource.select(query);
-        result.on('error', (e) => { error = e; done(); });
+        result.on('error', (e: any) => { error = e; done(); });
       });
 
       it('should emit an error', () => {
@@ -210,14 +213,14 @@ describe('SparqlDatasource', () => {
     });
 
     describe('when invalid JSON is returned in response to the count query', () => {
-      let result, error;
+      let result: any, error: any;
       before((done) => {
         request.reset();
-        request.onFirstCall().returns(test.createHttpResponse(jsonResult, 'application/sparql-results+json'));
-        request.onSecondCall().returns(test.createHttpResponse('invalid', 'application/trig'));
+        request.onFirstCall().returns((test as any).createHttpResponse(jsonResult, 'application/sparql-results+json'));
+        request.onSecondCall().returns((test as any).createHttpResponse('invalid', 'application/trig'));
         let query = { subject: dataFactory.namedNode('abcde'), features: { quadPattern: true } };
         result = datasource.select(query);
-        result.on('error', (e) => { error = e; done(); });
+        result.on('error', (e: any) => { error = e; done(); });
       });
 
       it('should emit an error', () => {
@@ -226,12 +229,12 @@ describe('SparqlDatasource', () => {
     });
 
     describe('when the data query request errors', () => {
-      let result, error;
+      let result: any, error: any;
       before((done) => {
         request.reset();
         let query = { subject: dataFactory.namedNode('abcde'), features: { quadPattern: true } };
         result = datasource.select(query);
-        result.on('error', (e) => { error = e; done(); });
+        result.on('error', (e: any) => { error = e; done(); });
         request.getCall(0).callArgWith(1, Error('query response error'));
       });
 
@@ -241,13 +244,13 @@ describe('SparqlDatasource', () => {
     });
 
     describe('when the count query request errors', () => {
-      let result, totalCount;
+      let result: any, totalCount: any;
       before(() => {
         request.reset();
         let query = { subject: dataFactory.namedNode('abcdef'), features: { quadPattern: true } };
         result = datasource.select(query);
         request.returnValues[1].emit('error', new Error());
-        result.getProperty('metadata', (metadata) => { totalCount = metadata.totalCount; });
+        result.getProperty('metadata', (metadata: any) => { totalCount = metadata.totalCount; });
       });
 
       it('should emit a high count estimate', () => {
@@ -258,7 +261,7 @@ describe('SparqlDatasource', () => {
 
   describe('A SparqlDatasource instance with forceTypedLiterals true', () => {
     let request = sinon.stub();
-    let datasource = new SparqlDatasource({ dataFactory, endpoint: 'http://ex.org/sparql', request: request, forceTypedLiterals: true });
+    let datasource = new SparqlDatasource({ dataFactory, endpoint: 'http://ex.org/sparql', request, forceTypedLiterals: true });
     datasource.initialize();
 
     itShouldExecute(datasource, request,
@@ -293,20 +296,20 @@ describe('SparqlDatasource', () => {
   });
 });
 
-function itShouldExecute(datasource, request, name, query, constructQuery, countQuery) {
+function itShouldExecute(datasource: any, request: any, name: any, query: any, constructQuery: any, countQuery?: any) {
   describe('executing ' + name, () => {
-    let result, totalCount;
+    let result: any, totalCount: any;
     before(() => {
       request.reset();
-      request.onFirstCall().returns(test.createHttpResponse(jsonResult, 'application/sparql-results+json'));
-      request.onSecondCall().returns(test.createHttpResponse(countResult, 'text/csv'));
+      request.onFirstCall().returns((test as any).createHttpResponse(jsonResult, 'application/sparql-results+json'));
+      request.onSecondCall().returns((test as any).createHttpResponse(countResult, 'text/csv'));
       result = datasource.select(query);
-      result.getProperty('metadata', (metadata) => { totalCount = metadata.totalCount; });
+      result.getProperty('metadata', (metadata: any) => { totalCount = metadata.totalCount; });
     });
 
     it('should request a matching CONSTRUCT query', () => {
       request.should.have.been.called;
-      let url = URL.parse(request.firstCall.args[0].url, true);
+      let url: any = URL.parse(request.firstCall.args[0].url, true);
       (url.protocol + '//' + url.host + url.pathname).should.equal('http://ex.org/sparql');
       url.query.query.should.equal(constructQuery);
     });
@@ -314,7 +317,7 @@ function itShouldExecute(datasource, request, name, query, constructQuery, count
     if (countQuery) {
       it('should request a matching COUNT query', () => {
         request.should.have.been.calledTwice;
-        let url = URL.parse(request.secondCall.args[0].url, true);
+        let url: any = URL.parse(request.secondCall.args[0].url, true);
         (url.protocol + '//' + url.host + url.pathname).should.equal('http://ex.org/sparql');
         url.query.query.should.equal(countQuery);
       });

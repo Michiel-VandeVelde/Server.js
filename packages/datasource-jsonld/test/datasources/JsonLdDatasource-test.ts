@@ -1,9 +1,12 @@
 /*! @license MIT ©2014-2016 Ruben Verborgh, Ghent University - imec */
-let JsonLdDatasource = require('../../').datasources.JsonLdDatasource;
+import ThisPackage = require('../../');
+import LdfCore = require('@ldf/core');
+import * as path from 'path';
+import * as N3 from 'n3';
 
-let Datasource = require('@ldf/core').datasources.Datasource,
-    path = require('path'),
-    dataFactory = require('n3').DataFactory;
+const JsonLdDatasource = ThisPackage.datasources.JsonLdDatasource;
+const Datasource = LdfCore.datasources.Datasource;
+const dataFactory = N3.DataFactory;
 
 let exampleJsonLdUrl = 'file://' + path.join(__dirname, '../../../../test/assets/test.jsonld');
 
@@ -88,13 +91,13 @@ describe('JsonLdDatasource', () => {
   });
 });
 
-function itShouldExecute(datasource, name, query, expectedResultsCount, expectedTotalCount) {
+function itShouldExecute(datasource: any, name: any, query: any, expectedResultsCount: any, expectedTotalCount: any) {
   describe('executing ' + name, () => {
-    let resultsCount = 0, totalCount;
+    let resultsCount = 0, totalCount: any;
     before((done) => {
       let result = datasource.select(query);
-      result.getProperty('metadata', (metadata) => { totalCount = metadata.totalCount; });
-      result.on('data', (triple) => { resultsCount++; });
+      result.getProperty('metadata', (metadata: any) => { totalCount = metadata.totalCount; });
+      result.on('data', (triple: any) => { resultsCount++; });
       result.on('end', done);
     });
 

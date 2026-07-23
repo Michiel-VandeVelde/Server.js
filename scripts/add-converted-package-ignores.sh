@@ -8,8 +8,10 @@
 # migration-layer PR — it is what turns the promise in .gitignore's "Added
 # per-package as each one converts" comment into an actual, reviewable diff.
 #
-# Idempotent: safe to re-run with a growing package list across layers, since
-# each call rewrites the whole generated block rather than appending blindly.
+# Idempotent, but NOT additive: each call rewrites the whole generated block
+# from scratch, so always pass the FULL cumulative list of converted packages
+# (every package converted so far, not just the ones new to this layer) —
+# passing only the new ones will silently drop previous packages' patterns.
 set -e
 
 if [ "$#" -eq 0 ]; then

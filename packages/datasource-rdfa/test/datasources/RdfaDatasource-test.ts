@@ -1,33 +1,36 @@
 /*! @license MIT ©2014-2016 Ruben Verborgh, Ghent University - imec */
-let N3Datasource = require('../../').datasources.N3Datasource;
+import ThisPackage = require('../../');
+import LdfCore = require('@ldf/core');
+import * as path from 'path';
+import * as N3 from 'n3';
 
-let Datasource = require('@ldf/core').datasources.Datasource,
-    path = require('path'),
-    dataFactory = require('n3').DataFactory;
+const RdfaDatasource = ThisPackage.datasources.RdfaDatasource;
+const Datasource = LdfCore.datasources.Datasource;
+const dataFactory = N3.DataFactory;
 
-let exampleTurtleUrl = 'file://' + path.join(__dirname, '../../../../test/assets/test.ttl');
+let exampleRdfaUrl = 'file://' + path.join(__dirname, '../../../../test/assets/test.html');
 
-describe('N3Datasource', () => {
-  describe('The N3Datasource module', () => {
+describe('RdfaDatasource', () => {
+  describe('The RdfaDatasource module', () => {
     it('should be a function', () => {
-      N3Datasource.should.be.a('function');
+      RdfaDatasource.should.be.a('function');
     });
 
-    it('should be a N3Datasource constructor', (done) => {
-      let instance = new N3Datasource({ dataFactory, url: exampleTurtleUrl });
-      instance.should.be.an.instanceof(N3Datasource);
+    it('should be a RdfaDatasource constructor', (done) => {
+      let instance = new RdfaDatasource({ dataFactory, url: exampleRdfaUrl });
+      instance.should.be.an.instanceof(RdfaDatasource);
       instance.close(done);
     });
 
     it('should create Datasource objects', (done) => {
-      let instance = new N3Datasource({ dataFactory, url: exampleTurtleUrl });
+      let instance = new RdfaDatasource({ dataFactory, url: exampleRdfaUrl });
       instance.should.be.an.instanceof(Datasource);
       instance.close(done);
     });
   });
 
-  describe('A N3Datasource instance for an example Turtle file', () => {
-    let datasource = new N3Datasource({ dataFactory, url: exampleTurtleUrl });
+  describe('A RdfaDatasource instance for an example RDFa HTML file', () => {
+    let datasource = new RdfaDatasource({ dataFactory, url: exampleRdfaUrl });
     datasource.initialize();
     after((done) => { datasource.close(done); });
 
@@ -78,13 +81,13 @@ describe('N3Datasource', () => {
   });
 });
 
-function itShouldExecute(datasource, name, query, expectedResultsCount, expectedTotalCount) {
+function itShouldExecute(datasource: any, name: any, query: any, expectedResultsCount: any, expectedTotalCount: any) {
   describe('executing ' + name, () => {
-    let resultsCount = 0, totalCount;
+    let resultsCount = 0, totalCount: any;
     before((done) => {
       let result = datasource.select(query);
-      result.getProperty('metadata', (metadata) => { totalCount = metadata.totalCount; });
-      result.on('data', (triple) => { resultsCount++; });
+      result.getProperty('metadata', (metadata: any) => { totalCount = metadata.totalCount; });
+      result.on('data', (triple: any) => { resultsCount++; });
       result.on('end', done);
     });
 
