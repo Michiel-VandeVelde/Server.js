@@ -1,11 +1,14 @@
 /*! @license MIT ©2014-2016 Ruben Verborgh, Ghent University - imec */
-let HdtDatasource = require('../../').datasources.HdtDatasource;
+import ThisPackage = require('../../');
+import LdfCore = require('@ldf/core');
+import * as path from 'path';
+import * as N3 from 'n3';
+import * as RdfString from 'rdf-string';
 
-let Datasource = require('@ldf/core').datasources.Datasource,
-    UrlData = require('@ldf/core').UrlData,
-    path = require('path'),
-    dataFactory = require('n3').DataFactory,
-    RdfString = require('rdf-string');
+const HdtDatasource = ThisPackage.datasources.HdtDatasource;
+const Datasource = LdfCore.datasources.Datasource;
+const UrlData = LdfCore.UrlData;
+const dataFactory = N3.DataFactory;
 
 let exampleHdtFile = path.join(__dirname, '../../../../test/assets/test.hdt');
 let exampleHdtFileWithBlanks = path.join(__dirname, '../../../../test/assets/test-blank.hdt');
@@ -32,7 +35,7 @@ describe('HdtDatasource', () => {
   });
 
   describe('A HdtDatasource instance for an example HDT file', () => {
-    let datasource;
+    let datasource: any;
     function getDatasource() { return datasource; }
     before((done) => {
       datasource = new HdtDatasource({ dataFactory, file: exampleHdtFile });
@@ -95,7 +98,7 @@ describe('HdtDatasource', () => {
   });
 
   describe('A HdtDatasource instance with blank nodes', () => {
-    let datasource;
+    let datasource: any;
     function getDatasource() { return datasource; }
     before((done) => {
       datasource = new HdtDatasource({ dataFactory, file: exampleHdtFileWithBlanks });
@@ -144,7 +147,7 @@ describe('HdtDatasource', () => {
   });
 
   describe('A HdtDatasource instance with blank nodes and a blank node prefix', () => {
-    let datasource;
+    let datasource: any;
     function getDatasource() { return datasource; }
     before((done) => {
       datasource = new HdtDatasource({
@@ -197,14 +200,14 @@ describe('HdtDatasource', () => {
   });
 });
 
-function itShouldExecute(getDatasource, name, query,
-  expectedResultsCount, expectedTotalCount, expectedTriples) {
+function itShouldExecute(getDatasource: any, name: any, query: any,
+  expectedResultsCount: any, expectedTotalCount: any, expectedTriples?: any) {
   describe('executing ' + name, () => {
-    let resultsCount = 0, totalCount, triples = [];
+    let resultsCount = 0, totalCount: any, triples: any[] = [];
     before((done) => {
       let result = getDatasource().select(query);
-      result.getProperty('metadata', (metadata) => { totalCount = metadata.totalCount; });
-      result.on('data', (triple) => { resultsCount++; expectedTriples && triples.push(triple); });
+      result.getProperty('metadata', (metadata: any) => { totalCount = metadata.totalCount; });
+      result.on('data', (triple: any) => { resultsCount++; expectedTriples && triples.push(triple); });
       result.on('end', done);
     });
 

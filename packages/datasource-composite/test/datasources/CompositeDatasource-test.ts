@@ -1,11 +1,16 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
-let CompositeDatasource = require('../../').datasources.CompositeDatasource;
+import ThisPackage = require('../../');
+import LdfCore = require('@ldf/core');
+import LdfDatasourceHdt = require('@ldf/datasource-hdt');
+import LdfDatasourceN3 = require('@ldf/datasource-n3');
+import * as path from 'path';
+import * as N3 from 'n3';
 
-let Datasource = require('@ldf/core').datasources.Datasource,
-    HdtDatasource = require('@ldf/datasource-hdt').datasources.HdtDatasource,
-    N3Datasource = require('@ldf/datasource-n3').datasources.N3Datasource,
-    path = require('path'),
-    dataFactory = require('n3').DataFactory;
+const CompositeDatasource = ThisPackage.datasources.CompositeDatasource;
+const Datasource = LdfCore.datasources.Datasource;
+const HdtDatasource = LdfDatasourceHdt.datasources.HdtDatasource;
+const N3Datasource = LdfDatasourceN3.datasources.N3Datasource;
+const dataFactory = N3.DataFactory;
 
 let exampleHdtFile = path.join(__dirname, '../../../../test/assets/test.hdt');
 let exampleHdtFileWithBlanks = path.join(__dirname, '../../../../test/assets/test-blank.hdt');
@@ -13,7 +18,7 @@ let exampleTurtleUrl = 'file://' + path.join(__dirname, '../../../../test/assets
 let exampleTrigUrl = 'file://' + path.join(__dirname, '../../../../test/assets/test.trig');
 
 describe('CompositeDatasource', () => {
-  let references = {
+  let references: any = {
     data0: { dataFactory, settings: { dataFactory, file: exampleHdtFile }, datasourceType: HdtDatasource, size: 132 },
     data1: { dataFactory, settings: { dataFactory, file: exampleHdtFileWithBlanks, graph: 'http://example.org/graph0' }, datasourceType: HdtDatasource, size: 6 },
     data2: { dataFactory, settings: { dataFactory, url: exampleTurtleUrl }, datasourceType: N3Datasource, size: 129 },
@@ -56,7 +61,7 @@ describe('CompositeDatasource', () => {
   });
 
   describe('A CompositeDatasource instance for 4 Datasources', () => {
-    let datasource;
+    let datasource: any;
     function getDatasource() { return datasource; }
     before((done) => {
       datasource = new CompositeDatasource({ references: references, dataFactory });
@@ -154,14 +159,14 @@ describe('CompositeDatasource', () => {
   });
 });
 
-function itShouldExecute(getDatasource, name, query,
-  expectedResultsCount, expectedTotalCount, expectedTriples) {
+function itShouldExecute(getDatasource: any, name: any, query: any,
+  expectedResultsCount: any, expectedTotalCount: any, expectedTriples?: any) {
   describe('executing ' + name, () => {
-    let resultsCount = 0, totalCount, triples = [];
+    let resultsCount = 0, totalCount: any, triples: any[] = [];
     before((done) => {
       let result = getDatasource().select(query);
-      result.getProperty('metadata', (metadata) => { totalCount = metadata.totalCount; });
-      result.on('data', (triple) => { resultsCount++; expectedTriples && triples.push(triple); });
+      result.getProperty('metadata', (metadata: any) => { totalCount = metadata.totalCount; });
+      result.on('data', (triple: any) => { resultsCount++; expectedTriples && triples.push(triple); });
       result.on('end', done);
     });
 

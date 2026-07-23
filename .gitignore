@@ -26,6 +26,24 @@ packages/*/bin/*.js.map
 packages/core/lib/**/*.js
 packages/core/index.js
 packages/core/bin/*.js
+packages/datasource-composite/lib/**/*.js
+packages/datasource-composite/index.js
+packages/datasource-composite/bin/*.js
+packages/datasource-hdt/lib/**/*.js
+packages/datasource-hdt/index.js
+packages/datasource-hdt/bin/*.js
+packages/datasource-jsonld/lib/**/*.js
+packages/datasource-jsonld/index.js
+packages/datasource-jsonld/bin/*.js
+packages/datasource-n3/lib/**/*.js
+packages/datasource-n3/index.js
+packages/datasource-n3/bin/*.js
+packages/datasource-rdfa/lib/**/*.js
+packages/datasource-rdfa/index.js
+packages/datasource-rdfa/bin/*.js
+packages/datasource-sparql/lib/**/*.js
+packages/datasource-sparql/index.js
+packages/datasource-sparql/bin/*.js
 
 # Ignore deployment configuration files, but keep defaults and examples
 config.json
