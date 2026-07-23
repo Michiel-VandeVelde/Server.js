@@ -19,7 +19,7 @@
     "url": "https://github.com/LinkedDataFragments/Server.js/issues"
   },
   "scripts": {
-    "test": "nyc mocha",
+    "test": "[ -d test ] && TS_NODE_PROJECT=../../tsconfig.test.json TS_NODE_PREFER_TS_EXTS=true nyc mocha --require ../../test/test-setup.ts --recursive --timeout 500 \"test/**/*-test.ts\" \"test/**/*-test.js\" || echo \"No tests in this package\"",
     "lint": "eslint bin/* lib test"
   }
 }

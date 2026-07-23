@@ -1,0 +1,13 @@
+diff --git a/node_modules/hdt/bin/hdt b/node_modules/hdt/bin/hdt
+index 6fb00d0..7223b0d 100755
+--- a/node_modules/hdt/bin/hdt
++++ b/node_modules/hdt/bin/hdt
+@@ -33,7 +33,7 @@ hdt.fromFile(hdtFile)
+     { offset: offset, limit: limit }))
+   .then(results => {
+     process.stdout.write('# Total matches: ' + results.totalCount +
+-                           (results.exactCount ? '' : ' (estimated)') + '\n');
++                           (results.hasExactCount ? '' : ' (estimated)') + '\n');
+     writer.addQuads(results.triples);
+     writer.end();
+   })

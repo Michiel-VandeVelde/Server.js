@@ -18,7 +18,7 @@
     "url": "https://github.com/LinkedDataFragments/Server.js/issues"
   },
   "scripts": {
-    "test": "nyc mocha",
+    "test": "TS_NODE_PROJECT=../../tsconfig.test.json TS_NODE_PREFER_TS_EXTS=true nyc mocha --require ../../test/test-setup.ts --recursive --timeout 500 \"test/**/*-test.ts\" \"test/**/*-test.js\"",
     "lint": "eslint bin/* lib test"
   },
   "dependencies": {
@@ -31,6 +31,6 @@
     "@ldf/core": "^3.2.1"
   },
   "optionalDependencies": {
-    "hdt": "^3.0.1"
+    "hdt": "^3.3.2"
   }
 }
