@@ -1,18 +1,29 @@
 /*! @license MIT ©2015-2016 Miel Vander Sande, Ghent University - imec */
 /* A SummaryRdfViewExtension extends the Quad Pattern Fragments RDF view with a summary link. */
 
-let RdfView = require('@ldf/core').views.RdfView;
+import LdfCore = require('@ldf/core');
+import type { Quad } from 'n3';
+import type { RenderDone, ViewSettings } from '@ldf/core/lib/types';
+
+const RdfView = LdfCore.views.RdfView;
 
 let ds = 'http://semweb.mmlab.be/ns/datasummaries#';
 
+interface SummaryRdfSettings {
+  summaries?: { dir?: string; path?: string };
+  datasource: { url?: string };
+  baseURL?: string;
+  query: { datasource?: string };
+}
+
 // Creates a new SummaryRdfViewExtension
 class SummaryRdfViewExtension extends RdfView {
-  constructor(settings) {
+  constructor(settings?: ViewSettings) {
     super('QuadPatternFragments:After', settings);
   }
 
   // Generates triples and quads by sending them to the data and/or metadata callbacks
-  _generateRdf(settings, data, metadata, done) {
+  override _generateRdf(settings: SummaryRdfSettings, data: (quad: Quad) => void, metadata: (quad: Quad) => void, done: RenderDone) {
     // If summaries are enabled, connect the datasource to its summary
     // TODO: summary should be of/off per dataset
     if (settings.summaries && (settings.summaries.dir || settings.summaries.path)) {
@@ -26,4 +37,4 @@ class SummaryRdfViewExtension extends RdfView {
   }
 }
 
-module.exports = SummaryRdfViewExtension;
+export = SummaryRdfViewExtension;

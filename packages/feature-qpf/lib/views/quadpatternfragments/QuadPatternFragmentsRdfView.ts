@@ -1,8 +1,13 @@
 /*! @license MIT ©2015-2017 Ruben Verborgh and Ruben Taelman, Ghent University - imec */
 /* A QuadPatternFragmentsRdfView represents a Quad Pattern Fragment in RDF. */
 
-let RdfView = require('@ldf/core').views.RdfView,
-    stringQuadToQuad = require('rdf-string').stringQuadToQuad;
+import LdfCore = require('@ldf/core');
+import { stringQuadToQuad } from 'rdf-string';
+import type { Quad } from 'n3';
+import type { DatasourceMetadata, RenderDone } from '@ldf/core/lib/types';
+import type { FragmentDatasource, FragmentInfo, FragmentQuery, FragmentMetadata, QpfViewSettings } from '../../types';
+
+const RdfView = LdfCore.views.RdfView;
 
 let dcTerms = 'http://purl.org/dc/terms/',
     rdf = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
@@ -11,16 +16,18 @@ let dcTerms = 'http://purl.org/dc/terms/',
     hydra = 'http://www.w3.org/ns/hydra/core#',
     voID = 'http://rdfs.org/ns/void#';
 
+interface RawQuad { subject: string; predicate: string; object: string; }
+
 // Creates a new QuadPatternFragmentsRdfView
 class QuadPatternFragmentsRdfView extends RdfView {
-  constructor(settings) {
+  constructor(settings?: QpfViewSettings) {
     super((settings || {}).viewNameOverride || 'QuadPatternFragments', settings);
   }
 
   // Generates quads by sending them to the data and/or metadata callbacks
-  _generateRdf(settings, data, metadata, done) {
+  override _generateRdf(settings: FragmentMetadata, data: (quad: Quad) => void, metadata: (quad: Quad) => void, done: RenderDone) {
     let datasource = settings.datasource, fragment = settings.fragment, query = settings.query,
-        results = settings.results, metadataDone = false;
+        results = settings.results!, metadataDone = false;
 
     // Add data source metadata
     this._generateMetadata(metadata, fragment, query, datasource);
@@ -29,7 +36,7 @@ class QuadPatternFragmentsRdfView extends RdfView {
     this._generateControls(metadata, fragment, query, datasource);
 
     // Add fragment metadata
-    results.getProperty('metadata', (meta) => {
+    results.getProperty('metadata', (meta: DatasourceMetadata) => {
       this.sendFragmentMetadata(metadata, fragment, query, datasource, meta);
 
       // End if the data was also written
@@ -43,7 +50,7 @@ class QuadPatternFragmentsRdfView extends RdfView {
   }
 
   // Generate the datasource metadata
-  _generateMetadata(metadata, fragment, query, datasource) {
+  _generateMetadata(metadata: (quad: Quad) => void, fragment: FragmentInfo, query: FragmentQuery, datasource: FragmentDatasource) {
     if (!datasource.url) return;
     datasource.index && metadata(this.quad({ subject: datasource.index, predicate: hydra + 'member', object: datasource.url }));
     metadata(this.quad({ subject: datasource.url, predicate: rdf + 'type', object: voID  + 'Dataset' }));
@@ -54,7 +61,7 @@ class QuadPatternFragmentsRdfView extends RdfView {
   }
 
   // Generate the datasource controls
-  _generateControls(metadata, fragment, query, datasource) {
+  _generateControls(metadata: (quad: Quad) => void, fragment: FragmentInfo, query: FragmentQuery, datasource: FragmentDatasource) {
     if (datasource.url && datasource.supportsQuads)
       metadata(this.quad({ subject: datasource.url, predicate: sd + 'defaultGraph', object: 'urn:ldf:defaultGraph' }));
     datasource.url && metadata(this.quad({ subject: datasource.url, predicate: hydra + 'search', object: '_:pattern' }));
@@ -78,7 +85,7 @@ class QuadPatternFragmentsRdfView extends RdfView {
   }
 
   // Generate the fragment metadata
-  sendFragmentMetadata(metadata, fragment, query, datasource, meta) {
+  sendFragmentMetadata(metadata: (quad: Quad) => void, fragment: FragmentInfo, query: FragmentQuery, datasource: FragmentDatasource, meta: DatasourceMetadata) {
     if (!fragment.pageUrl) return;
     // General fragment metadata
     fragment.url && metadata(this.quad({ subject: fragment.url, predicate: voID + 'subset', object: fragment.pageUrl }));
@@ -100,13 +107,13 @@ class QuadPatternFragmentsRdfView extends RdfView {
     fragment.firstPageUrl && metadata(this.quad({ subject: fragment.pageUrl, predicate: hydra + 'first', object: fragment.firstPageUrl }));
     if (query.offset)
       fragment.previousPageUrl && metadata(this.quad({ subject: fragment.pageUrl, predicate: hydra + 'previous', object: fragment.previousPageUrl }));
-    if (totalCount >= query.limit + (query.offset || 0))
+    if (totalCount >= query.limit! + (query.offset || 0))
       fragment.nextPageUrl && metadata(this.quad({ subject: fragment.pageUrl, predicate: hydra + 'next', object: fragment.nextPageUrl }));
   }
 
-  quad(quadObject) {
-    return stringQuadToQuad(quadObject, this.dataFactory);
+  quad(quadObject: RawQuad): Quad {
+    return stringQuadToQuad(quadObject, this.dataFactory) as Quad;
   }
 }
 
-module.exports = QuadPatternFragmentsRdfView;
+export = QuadPatternFragmentsRdfView;

@@ -1,12 +1,12 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
-let SummaryController = require('../../lib/controllers/SummaryController');
+import SummaryController = require('../../lib/controllers/SummaryController');
 
-let request = require('supertest'),
-    DummyServer = require('../../../../test/DummyServer'),
-    fs = require('fs'),
-    path = require('path');
+import request = require('supertest');
+import DummyServer = require('../../../../test/DummyServer');
+import * as fs from 'fs';
+import * as path from 'path';
 
-let SummaryRdfView = require('../../lib/views/summary/SummaryRdfView.js');
+import SummaryRdfView = require('../../lib/views/summary/SummaryRdfView');
 
 describe('SummaryController', () => {
   describe('The SummaryController module', () => {
@@ -24,7 +24,7 @@ describe('SummaryController', () => {
   });
 
   describe('An SummaryController instance', () => {
-    let controller, client;
+    let controller: any, client: any;
     before(() => {
       controller = new SummaryController({
         views: [new SummaryRdfView()],
@@ -38,7 +38,7 @@ describe('SummaryController', () => {
     });
 
     it('should correctly serve summary in Turtle', (done) => {
-      client.get('/summaries/summary').set('Accept', 'text/turtle').expect((response) => {
+      client.get('/summaries/summary').set('Accept', 'text/turtle').expect((response: any) => {
         let summary = fs.readFileSync(path.join(__dirname, '/../../../../test/assets/summary.ttl'), 'utf8');
         controller.next.should.not.have.been.called;
         response.should.have.property('statusCode', 200);
@@ -49,7 +49,7 @@ describe('SummaryController', () => {
     });
 
     it('should correctly serve summary in Trig', (done) => {
-      client.get('/summaries/summary').expect((response) => {
+      client.get('/summaries/summary').expect((response: any) => {
         let summary = fs.readFileSync(path.join(__dirname, '/../../../../test/assets/summary.ttl'), 'utf8');
         controller.next.should.not.have.been.called;
         response.should.have.property('statusCode', 200);
@@ -60,7 +60,7 @@ describe('SummaryController', () => {
     });
 
     it('should correctly serve summary in ntriples', (done) => {
-      client.get('/summaries/summary').set('Accept', 'application/n-triples').expect((response) => {
+      client.get('/summaries/summary').set('Accept', 'application/n-triples').expect((response: any) => {
         let summary = fs.readFileSync(path.join(__dirname, '/../../../../test/assets/summary.nt'), 'utf8');
         controller.next.should.not.have.been.called;
         response.should.have.property('statusCode', 200);
@@ -71,13 +71,13 @@ describe('SummaryController', () => {
     });
 
     it('should hand over to the next controller if no summary with that name is found', (done) => {
-      client.get('/summaries/unknown').expect((response) => {
+      client.get('/summaries/unknown').expect((response: any) => {
         controller.next.should.have.been.calledOnce;
       }).end(done);
     });
 
     it('should hand over to the next controller for non-summary paths', (done) => {
-      client.get('/other').expect((response) => {
+      client.get('/other').expect((response: any) => {
         controller.next.should.have.been.calledOnce;
       }).end(done);
     });

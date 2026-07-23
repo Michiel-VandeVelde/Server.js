@@ -44,6 +44,22 @@ packages/datasource-rdfa/bin/*.js
 packages/datasource-sparql/lib/**/*.js
 packages/datasource-sparql/index.js
 packages/datasource-sparql/bin/*.js
+packages/feature-memento/lib/**/*.js
+packages/feature-memento/index.js
+packages/feature-memento/bin/*.js
+packages/feature-qpf/lib/**/*.js
+packages/feature-qpf/index.js
+packages/feature-qpf/bin/*.js
+packages/feature-summary/lib/**/*.js
+packages/feature-summary/index.js
+packages/feature-summary/bin/*.js
+packages/feature-webid/lib/**/*.js
+packages/feature-webid/index.js
+packages/feature-webid/bin/*.js
+packages/preset-qpf/lib/**/*.js
+packages/preset-qpf/index.js
+packages/preset-qpf/bin/*.js
+!packages/feature-summary/bin/generate-summary
 
 # Ignore deployment configuration files, but keep defaults and examples
 config.json
