@@ -49,3 +49,6 @@ packages/feature-webid/bin/*.js
 packages/preset-qpf/lib/**/*.js
 packages/preset-qpf/index.js
 packages/preset-qpf/bin/*.js
+packages/server/lib/**/*.js
+packages/server/index.js
+packages/server/bin/*.js
