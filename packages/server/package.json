@@ -16,6 +16,7 @@
     "config",
     "lib/**/*.js",
     "bin/**/*",
+    "!bin/**/*.ts",
     "index.js"
   ],
   "repository": "https://github.com/LinkedDataFragments/Server.js/tree/master/packages/server",
@@ -24,7 +25,9 @@
   },
   "scripts": {
     "test": "[ -d test ] && TS_NODE_PROJECT=../../tsconfig.test.json TS_NODE_PREFER_TS_EXTS=true nyc mocha --require ../../test/test-setup.ts --recursive --timeout 500 \"test/**/*-test.ts\" \"test/**/*-test.js\" || echo \"No tests in this package\"",
-    "lint": "eslint bin/* lib test"
+    "lint": "eslint bin/* lib test",
+    "build": "test -f ../../node_modules/typescript/bin/tsc && node ../../node_modules/typescript/bin/tsc || echo '[build] typescript not found outside the monorepo, skipping (assuming already built)'",
+    "prepare": "npm run build"
   },
   "dependencies": {
     "@ldf/core": "^3.2.1",
@@ -38,5 +41,8 @@
     "@ldf/feature-qpf": "^3.2.1",
     "@ldf/feature-summary": "^3.2.1",
     "@ldf/preset-qpf": "3.2.0"
+  },
+  "engines": {
+    "node": ">=18.0"
   }
 }
