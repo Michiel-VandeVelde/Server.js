@@ -1,6 +1,14 @@
 import * as SinonStatic from 'sinon';
 import * as Chai from 'chai';
 
+declare module 'chai' {
+  interface Assertion {
+    // Custom assertion registered in test-setup.ts via chai.Assertion.addMethod;
+    // real chai has no built-in typing for it.
+    streamWithLength(expectedLength: number, callback: (err?: any) => void): void;
+  }
+}
+
 declare global {
   // eslint-disable-next-line no-var
   var sinon: typeof SinonStatic;

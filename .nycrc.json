@@ -1,6 +1,6 @@
 {
   "extension": [".ts"],
-  "include": ["packages/*/lib/**/*.ts"],
+  "include": ["packages/*/index.ts", "packages/*/lib/**/*.ts", "packages/*/bin/**/*.ts"],
   "exclude": ["packages/*/test/**", "**/*.d.ts"],
   "require": ["ts-node/register"],
   "reporter": ["text", "lcov"]

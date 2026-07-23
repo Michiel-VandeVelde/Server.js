@@ -205,7 +205,7 @@
       // declaration order, so a future override inserted between them (or a
       // reorder) can't silently flip which tsconfig test files are checked against.
       files: [ "packages/**/*.ts" ],
-      excludedFiles: [ "packages/**/test/**/*-test.ts" ],
+      excludedFiles: [ "packages/**/test/**/*.ts" ],
       parser: "@typescript-eslint/parser",
       parserOptions: {
         ecmaVersion: 9,
@@ -225,7 +225,7 @@
       // TypeScript test files (per-package *-test.ts) and the root test/
       // infrastructure (test-setup.ts, DummyServer.ts, global.d.ts) — both are
       // only covered by tsconfig.test.json's "include" list, not tsconfig.json's.
-      files: [ "packages/**/test/**/*-test.ts", "test/**/*.ts" ],
+      files: [ "packages/**/test/**/*.ts", "test/**/*.ts" ],
       parser: "@typescript-eslint/parser",
       parserOptions: {
         ecmaVersion: 9,

@@ -1,0 +1,15 @@
+# Compiled TypeScript output (compiled in-place next to .ts sources).
+#
+# Declaration files (*.d.ts) and source maps (*.js.map) are always generated
+# build output — no package ever hand-writes one — so these two patterns are
+# safe to ignore repo-wide from the very first layer of this staged migration.
+# Compiled *.js is different: in a package that hasn't converted yet, *.js IS
+# the real hand-written source, so it must only be ignored once that specific
+# package has actually converted. Those per-package *.js patterns are appended
+# below as each package converts, rather than blanket-ignored here.
+packages/*/lib/**/*.d.ts
+packages/*/lib/**/*.js.map
+packages/*/index.d.ts
+packages/*/index.js.map
+packages/*/bin/*.d.ts
+packages/*/bin/*.js.map
