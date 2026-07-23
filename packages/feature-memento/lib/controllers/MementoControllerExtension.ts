@@ -1,13 +1,20 @@
 /*! @license MIT ©2016 Miel Vander Sande, Ghent University - imec */
 /* A MementoControllerExtension extends Triple Pattern Fragments responses with Memento headers. */
 
-let Controller = require('@ldf/core').controllers.Controller,
-    TimegateController = require('./TimegateController'),
-    url = require('url');
+import LdfCore = require('@ldf/core');
+import TimegateController = require('./TimegateController');
+import url = require('url');
+import type { LdfRequest, LdfResponse } from '@ldf/core/lib/types';
+import type { InvertedTimegateMap, MementoControllerExtensionOptions, MementoRequestSettings } from '../types';
+
+const Controller = LdfCore.controllers.Controller;
 
 // Creates a new MementoControllerExtension
 class MementoControllerExtension extends Controller {
-  constructor(settings) {
+  protected _invertedTimegateMap: InvertedTimegateMap;
+  protected _timegateBaseUrl: string;
+
+  constructor(settings: MementoControllerExtensionOptions) {
     super(settings);
     let timegates = settings.timegates || {};
     this._invertedTimegateMap = TimegateController.parseInvertedTimegateMap(timegates.mementos, settings.urlData);
@@ -15,10 +22,10 @@ class MementoControllerExtension extends Controller {
   }
 
   // Add Memento Link headers
-  _handleRequest(request, response, next, settings) {
+  override _handleRequest(request: LdfRequest, response: LdfResponse, next: (error?: Error) => void, settings: MementoRequestSettings) {
     let datasource = settings.query.datasource,
-        memento = this._invertedTimegateMap[settings.datasource.id],
-        requestQuery = request.url.match(/\?.*|$/)[0];
+        memento = this._invertedTimegateMap[settings.datasource.id!],
+        requestQuery = request.url!.match(/\?.*|$/)![0];
 
     // Add link to original if it is a memento
     if (memento && memento.interval && memento.interval.length === 2) {
@@ -46,4 +53,4 @@ class MementoControllerExtension extends Controller {
   }
 }
 
-module.exports = MementoControllerExtension;
+export = MementoControllerExtension;

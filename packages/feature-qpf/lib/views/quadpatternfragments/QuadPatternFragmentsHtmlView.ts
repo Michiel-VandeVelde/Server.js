@@ -1,24 +1,32 @@
 /*! @license MIT ©2015-2017 Ruben Verborgh and Ruben Taelman, Ghent University - imec */
 /* A QuadPatternFragmentsRdfView represents a TPF or QPF in HTML. */
 
-let HtmlView = require('@ldf/core').views.HtmlView,
-    join = require('path').join;
+import LdfCore = require('@ldf/core');
+import { join } from 'path';
+import type { Quad } from 'n3';
+import type { LdfRequest, LdfResponse, RenderDone, ViewSettings } from '@ldf/core/lib/types';
+import type { FragmentMetadata } from '../../types';
+
+const HtmlView = LdfCore.views.HtmlView;
 
 // Creates a new QuadPatternFragmentsHtmlView
 class QuadPatternFragmentsHtmlView extends HtmlView {
-  constructor(settings) {
+  protected viewDirectory: string;
+
+  constructor(settings?: ViewSettings) {
     super('QuadPatternFragments', settings);
 
     this.viewDirectory = __dirname;
   }
 
   // Renders the view with the given settings to the response
-  _render(settings, request, response, done) {
+  override _render(settings: FragmentMetadata, request: LdfRequest, response: LdfResponse, done: RenderDone) {
     // Read the data and metadata
-    let self = this, quads = settings.quads = [], results = settings.results;
-    results.on('data', (triple) => { quads.push(triple); });
+    let self = this, quads: Quad[] = [], results = settings.results!;
+    settings.quads = quads;
+    results.on('data', (triple: Quad) => { quads.push(triple); });
     results.on('end',  () => { settings.metadata && renderHtml(); });
-    results.getProperty('metadata', (metadata) => {
+    results.getProperty('metadata', (metadata: unknown) => {
       settings.metadata = metadata;
       results.ended && renderHtml();
     });
@@ -32,4 +40,4 @@ class QuadPatternFragmentsHtmlView extends HtmlView {
   }
 }
 
-module.exports = QuadPatternFragmentsHtmlView;
+export = QuadPatternFragmentsHtmlView;
