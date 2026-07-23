@@ -7,9 +7,22 @@ summaries
 coverage
 
 # Compiled TypeScript output (compiled in-place next to .ts sources).
-# Added per-package as each one converts to TypeScript in this staged migration —
-# a blanket "packages/*/lib/**/*.js is compiled output" pattern would silently
+#
+# Declaration files (*.d.ts) and source maps (*.js.map) are always generated
+# build output — no package ever hand-writes one — so these two patterns are
+# safe to ignore repo-wide from the very first layer of this staged migration.
+packages/*/lib/**/*.d.ts
+packages/*/lib/**/*.js.map
+packages/*/index.d.ts
+packages/*/index.js.map
+packages/*/bin/*.d.ts
+packages/*/bin/*.js.map
+
+# Compiled *.js is different: in a package that hasn't converted yet, *.js IS
+# the real hand-written source, so a blanket pattern here would silently
 # ignore genuine hand-written .js source in packages that haven't converted yet.
+# Instead, each package's own compiled-*.js patterns are appended below via
+# scripts/add-converted-package-ignores.sh once that package actually converts.
 
 # Ignore deployment configuration files, but keep defaults and examples
 config.json
