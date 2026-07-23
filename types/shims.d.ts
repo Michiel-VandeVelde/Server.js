@@ -5,7 +5,7 @@ declare module 'forwarded-parse' {
 
 declare module 'negotiate' {
   interface Negotiate {
-    choose<T extends { type: string; responseType: string; quality: number }>(
+    choose<T extends import('@ldf/core/lib/types').ContentTypeMatch>(
       candidates: T[],
       request: { headers: import('http').IncomingHttpHeaders },
     ): T[];
