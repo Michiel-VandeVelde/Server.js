@@ -20,10 +20,6 @@ class HdtDatasource extends Datasource {
 
   // Loads the HDT datasource
   async _initialize() {
-    // The hdt package bundles its own n3/rdf-string majors (2.x), which coexist
-    // in node_modules alongside this repo's own 1.x versions used everywhere else.
-    // Passing dataFactory explicitly makes hdt produce terms via *our* DataFactory
-    // instead of its own bundled (incompatible) one — do not drop this argument.
     this._hdtDocument = await hdt.fromFile(this._hdtFile, { dataFactory: this.dataFactory });
   }
 
