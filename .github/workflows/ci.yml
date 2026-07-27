@@ -14,7 +14,9 @@ jobs:
         with:
           node-version: 22.x
       - run: yarn install
+      - run: yarn run build
       - run: yarn run lint
+      - run: yarn run typecheck-test
 
   test:
     runs-on: ${{ matrix.os }}
@@ -37,9 +39,11 @@ jobs:
       - uses: actions/cache@v6
         with:
           path: '**/node_modules'
-          key: ${{ runner.os }}-test-modules-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-test-modules-${{ matrix.node-version }}-${{ hashFiles('**/yarn.lock') }}
       - name: Install dependencies
         run: yarn install
+      - name: Build
+        run: yarn run build
       - name: Run tests
         run: yarn run test-ci
       - name: Submit coverage results
@@ -78,6 +82,8 @@ jobs:
           key: ${{ runner.os }}-docker-modules-v1-${{ hashFiles('**/yarn.lock') }}
       - name: Install dependencies
         run: yarn install --pure-lockfile
+      - name: Build
+        run: yarn run build
       - name: Install Lerna Docker
         run: sh -c "`curl -fsSl https://raw.githubusercontent.com/rubensworks/lerna-docker/master/install.sh`"
       - name: Build Docker images

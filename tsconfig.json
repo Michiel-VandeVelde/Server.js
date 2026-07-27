@@ -1,0 +1,32 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "types": ["node"],
+    "strict": true,
+    "declaration": true,
+    "inlineSources": true,
+    "sourceMap": true,
+    "removeComments": false,
+    "preserveConstEnums": true,
+    "esModuleInterop": false,
+    "skipLibCheck": true
+  },
+  "include": [
+    "packages/*/index.ts",
+    "packages/*/lib/**/*.ts",
+    "packages/*/bin/**/*.ts",
+    "types/**/*.d.ts"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/test",
+    "packages/*/index.d.ts",
+    "packages/*/lib/**/*.d.ts",
+    "packages/*/bin/**/*.d.ts"
+  ]
+}

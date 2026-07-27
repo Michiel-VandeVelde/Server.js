@@ -197,6 +197,56 @@
       rules: {
         "import/no-extraneous-dependencies": "off"
       }
+    },
+    {
+      // TypeScript source files, excluding test files (handled by the override
+      // below with its own tsconfig.test.json project) — excludedFiles makes
+      // the two blocks structurally mutually exclusive rather than relying on
+      // declaration order, so a future override inserted between them (or a
+      // reorder) can't silently flip which tsconfig test files are checked against.
+      files: [ "packages/**/*.ts" ],
+      excludedFiles: [ "packages/**/test/**/*.ts" ],
+      parser: "@typescript-eslint/parser",
+      parserOptions: {
+        ecmaVersion: 9,
+        sourceType: "module",
+        project: "./tsconfig.json"
+      },
+      plugins: [ "@typescript-eslint" ],
+      rules: {
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": [ 2, { args: "none" } ],
+        // The TS compiler already catches undefined references, and this rule
+        // otherwise misfires on TS-only constructs (interfaces, type imports).
+        "no-undef": "off"
+      }
+    },
+    {
+      // TypeScript test files (per-package *-test.ts) and the root test/
+      // infrastructure (test-setup.ts, DummyServer.ts, global.d.ts) — both are
+      // only covered by tsconfig.test.json's "include" list, not tsconfig.json's.
+      files: [ "packages/**/test/**/*.ts", "test/**/*.ts" ],
+      parser: "@typescript-eslint/parser",
+      parserOptions: {
+        ecmaVersion: 9,
+        sourceType: "module",
+        project: "./tsconfig.test.json"
+      },
+      plugins: [ "@typescript-eslint" ],
+      rules: {
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": [ 2, { args: "none" } ],
+        "no-undef": "off",
+        "import/no-extraneous-dependencies": "off",
+        // Chai/mocha/DummyServer conventions rely on real `function` expressions
+        // for dynamic `this` binding (e.g. test/test-setup.ts's `extractQueryParams`
+        // capturing the calling router as `this`) — arrow functions would break that.
+        "prefer-arrow-callback": "off",
+        "no-invalid-this": "off",
+        // Allows the `/// <reference path="..." />` TS directive comment and
+        // this repo's `/*! @license ... */` preserved-comment convention.
+        "spaced-comment": [ 2, "always", { markers: [ "/" ], block: { markers: [ "!" ] } } ]
+      }
     }
   ]
 }

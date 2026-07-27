@@ -1,0 +1,11 @@
+{
+  "extension": [".ts", ".js"],
+  "include": [
+    "packages/*/index.ts", "packages/*/index.js",
+    "packages/*/lib/**/*.ts", "packages/*/lib/**/*.js",
+    "packages/*/bin/**/*.ts", "packages/*/bin/**/*.js"
+  ],
+  "exclude": ["packages/*/test/**", "**/*.d.ts"],
+  "require": ["ts-node/register"],
+  "reporter": ["text", "lcov"]
+}
