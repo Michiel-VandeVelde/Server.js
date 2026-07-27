@@ -5,6 +5,10 @@
     "lib": ["ES2022"],
     "module": "commonjs",
     "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "lru-cache": ["node_modules/@types/lru-cache"]
+    },
     "resolveJsonModule": true,
     "types": ["node"],
     "strict": true,

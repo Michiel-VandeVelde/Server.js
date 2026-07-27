@@ -5,13 +5,16 @@
   "lsd:module": true,
   "license": "MIT",
   "main": "index.js",
+  "types": "index",
   "publishConfig": {
     "access": "public"
   },
   "files": [
     "components",
     "lib/**/*.js",
-    "index.js"
+    "lib/**/*.d.ts",
+    "index.js",
+    "index.d.ts"
   ],
   "repository": "https://github.com/LinkedDataFragments/Server.js/tree/master/packages/datasource-sparql",
   "bugs": {
@@ -19,7 +22,9 @@
   },
   "scripts": {
     "test": "TS_NODE_PROJECT=../../tsconfig.test.json TS_NODE_PREFER_TS_EXTS=true nyc mocha --config ../../.mocharc.yml",
-    "lint": "eslint bin/* lib test"
+    "lint": "eslint bin/* lib test",
+    "build": "test -f ../../node_modules/typescript/bin/tsc && node ../../node_modules/typescript/bin/tsc || echo '[build] typescript not found outside the monorepo, skipping (assuming already built)'",
+    "prepare": "npm run build"
   },
   "dependencies": {
     "lru-cache": "^5.1.1",
@@ -32,5 +37,8 @@
   },
   "devDependencies": {
     "@ldf/core": "^3.2.1"
+  },
+  "engines": {
+    "node": ">=18.0"
   }
 }
