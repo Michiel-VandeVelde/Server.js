@@ -12,5 +12,5 @@ if [ -z "$(find packages -path '*/test/*' \( -name '*-test.ts' -o -name '*-test.
 fi
 
 TS_NODE_PROJECT=tsconfig.test.json TS_NODE_PREFER_TS_EXTS=true \
-  mocha --require ts-node/register --require ./test/test-setup.ts \
+  mocha --no-config --require ts-node/register --require ./test/test-setup.ts \
   "packages/*/test/**/*-test.ts" "packages/*/test/**/*-test.js" --recursive --timeout 500

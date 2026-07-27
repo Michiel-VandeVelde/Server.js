@@ -1,0 +1,6 @@
+require: ../../test/test-setup.ts
+recursive: true
+timeout: 500
+spec:
+  - "test/**/*-test.ts"
+  - "test/**/*-test.js"
