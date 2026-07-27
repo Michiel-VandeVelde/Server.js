@@ -1,4 +1,3 @@
-import * as SinonStatic from 'sinon';
 import * as Chai from 'chai';
 
 declare module 'chai' {
@@ -11,7 +10,7 @@ declare module 'chai' {
 
 declare global {
   // eslint-disable-next-line no-var
-  var sinon: typeof SinonStatic;
+  var sinon: typeof import('sinon');
   // eslint-disable-next-line no-var
   var expect: Chai.ExpectStatic;
   // eslint-disable-next-line no-var
