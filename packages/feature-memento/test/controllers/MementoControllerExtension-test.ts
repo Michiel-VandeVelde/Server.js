@@ -1,0 +1,96 @@
+/*! @license MIT ©2016 Miel Vander Sande, Ghent University - imec */
+import { describe, it, expect } from 'vitest';
+import { MementoControllerExtension } from '../../lib/controllers/MementoControllerExtension';
+import { Controller } from '@ldf/core/lib/controllers/Controller';
+import Core = require('@ldf/core');
+import * as url from 'url';
+import { sinon } from '../../../../test/sinon';
+import type { LdfRequest, LdfResponse } from '@ldf/core';
+
+const { UrlData } = Core;
+
+describe('MementoControllerExtension', () => {
+  describe('The MementoControllerExtension module', () => {
+    it('should be a function', () => {
+      expect(typeof MementoControllerExtension).toBe('function');
+    });
+
+    it('should be a MementoControllerExtension constructor', () => {
+      expect(new MementoControllerExtension({ urlData: new UrlData() })).toBeInstanceOf(MementoControllerExtension);
+    });
+
+    it('should be a Controller constructor', () => {
+      expect(new MementoControllerExtension({ urlData: new UrlData() })).toBeInstanceOf(Controller);
+    });
+  });
+
+  describe('An instance for a datasource with a memento configured', () => {
+    let datasource = { id: 'ds1', path: '/ds1/' };
+    let extension = new MementoControllerExtension({
+      urlData: new UrlData({ baseURL: 'http://example.org/' }),
+      timegates: {
+        mementos: {
+          resource: [{ datasource: datasource as any, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z' }],
+        },
+      },
+    });
+
+    it('should add original and timegate links for a request matching the memento', () => new Promise<void>((done) => {
+      let request = { url: '/ds1/?subject=x', parsedUrl: url.parse('http://example.org/ds1/?subject=x', true) } as unknown as LdfRequest,
+          headers: Record<string, string> = {}, response = { setHeader: (name: string, value: string) => { headers[name] = value; } } as unknown as LdfResponse,
+          settings = { query: {}, datasource: { id: 'ds1' } };
+
+      (extension as any)._handleRequest(request, response, () => {
+        expect(headers.Link).toContain('rel=original');
+        expect(headers.Link).toContain('rel=timegate');
+        expect(headers.Link).toContain('/timegate/resource');
+        expect(headers).toHaveProperty('Memento-Datetime');
+        done();
+      }, settings as any);
+    }));
+
+    it('should add a local timegate link for a non-memento resource with timegate: true', () => new Promise<void>((done) => {
+      let request = { url: '/ds2/?subject=x', parsedUrl: url.parse('http://example.org/ds2/?subject=x', true) } as unknown as LdfRequest,
+          headers: Record<string, string> = {}, response = { setHeader: (name: string, value: string) => { headers[name] = value; } } as unknown as LdfResponse,
+          settings = { query: { datasource: 'ds2' }, datasource: { id: 'ds2', timegate: true } };
+
+      (extension as any)._handleRequest(request, response, () => {
+        expect(headers.Link).toContain('rel=timegate');
+        expect(headers.Link).toContain('/timegate/ds2');
+        done();
+      }, settings as any);
+    }));
+
+    it('should use a configured external timegate URL as-is', () => new Promise<void>((done) => {
+      let request = { url: '/ds3/?subject=x', parsedUrl: url.parse('http://example.org/ds3/?subject=x', true) } as unknown as LdfRequest,
+          headers: Record<string, string> = {}, response = { setHeader: (name: string, value: string) => { headers[name] = value; } } as unknown as LdfResponse,
+          settings = { query: { datasource: 'ds3' }, datasource: { id: 'ds3', timegate: 'http://external.example.org/timegate/ds3' } };
+
+      (extension as any)._handleRequest(request, response, () => {
+        expect(headers.Link).toBe('<http://external.example.org/timegate/ds3?subject=x>;rel=timegate');
+        done();
+      }, settings as any);
+    }));
+
+    it('should not add a Link header for a resource without a timegate configuration', () => new Promise<void>((done) => {
+      let request = { url: '/ds4/?subject=x', parsedUrl: url.parse('http://example.org/ds4/?subject=x', true) } as unknown as LdfRequest,
+          headers: Record<string, string> = {}, response = { setHeader: (name: string, value: string) => { headers[name] = value; } } as unknown as LdfResponse,
+          settings = { query: { datasource: 'ds4' }, datasource: { id: 'ds4' } };
+
+      (extension as any)._handleRequest(request, response, () => {
+        expect(headers).not.toHaveProperty('Link');
+        done();
+      }, settings as any);
+    }));
+
+    it('should always hand over to the next controller', () => {
+      let request = { url: '/ds4/?subject=x', parsedUrl: url.parse('http://example.org/ds4/?subject=x', true) } as unknown as LdfRequest,
+          response = { setHeader: () => {} } as unknown as LdfResponse,
+          settings = { query: { datasource: 'ds4' }, datasource: { id: 'ds4' } },
+          next = sinon.spy();
+
+      (extension as any)._handleRequest(request, response, next, settings as any);
+      expect(next.calledOnce).toBe(true);
+    });
+  });
+});

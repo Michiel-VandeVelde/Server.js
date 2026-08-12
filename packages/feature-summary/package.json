@@ -23,7 +23,7 @@
     "url": "https://github.com/LinkedDataFragments/Server.js/issues"
   },
   "scripts": {
-    "test": "nyc mocha",
+    "test": "vitest run --root ../.. packages/feature-summary/test",
     "lint": "eslint bin/* lib test"
   },
   "dependencies": {

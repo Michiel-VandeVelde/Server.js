@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "declaration": false,
+    "sourceMap": false,
+    "inlineSources": false,
+    "types": ["node"],
+    "skipLibCheck": true
+  },
+  "include": [
+    "packages/*/index.ts",
+    "packages/*/lib/**/*",
+    "packages/*/bin/**/*",
+    "packages/*/test/**/*",
+    "test/**/*",
+    "types/**/*.d.ts"
+  ]
+}

@@ -192,21 +192,34 @@
 
   overrides: [
     {
-      // Specific rules for test files
-      files: [ "packages/**/test/**/*-test.js" ],
+      // Specific rules for JS test files (mocha-based; not yet converted to vitest+TS)
+      files: [ "packages/**/test/**/*-test.js", "test/*.js" ],
+      globals: {
+        describe: true,
+        it: true,
+        before: true,
+        after: true,
+        beforeEach: true,
+        afterEach: true,
+        expect: true,
+        sinon: true,
+        test: true
+      },
       rules: {
-        "import/no-extraneous-dependencies": "off"
+        "import/no-extraneous-dependencies": "off",
+        "new-cap": 0, // test constructors as regular functions
+        "max-nested-callbacks": 0 // describe/it nest deeply by nature
       }
     },
     {
       // TypeScript source files
-      files: [ "packages/**/*.ts" ],
+      files: [ "packages/**/*.ts", "test/**/*.ts" ],
       parser: "@typescript-eslint/parser",
       extends: [ "plugin:@typescript-eslint/recommended-requiring-type-checking" ],
       parserOptions: {
         ecmaVersion: 9,
         sourceType: "module",
-        project: "./tsconfig.json"
+        project: [ "./tsconfig.json", "./tsconfig.test.json" ]
       },
       plugins: [ "@typescript-eslint" ],
       rules: {
@@ -273,6 +286,23 @@
       ],
       rules: {
         "no-restricted-syntax": "off"
+      }
+    },
+    {
+      // Test doubles routinely need to bypass structural typing to fake
+      // Node/library internals (fake Worker, fake request/response, ...),
+      // and sinon's untyped surface (no @types/sinon for this old pinned
+      // version — see test/sinon-types.ts) inherently produces `any`-typed
+      // values when extracting captured callback args. Neither is worth
+      // policing here the way it's policed in library code.
+      files: [ "packages/**/test/**/*-test.ts", "test/**/*.ts" ],
+      rules: {
+        "import/no-extraneous-dependencies": "off",
+        "no-restricted-syntax": "off",
+        "@typescript-eslint/no-unsafe-call": "off",
+        "@typescript-eslint/no-unsafe-member-access": "off",
+        "new-cap": 0, // test constructors as regular functions
+        "max-nested-callbacks": 0 // describe/it nest deeply by nature
       }
     }
   ]

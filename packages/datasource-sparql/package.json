@@ -18,7 +18,7 @@
     "url": "https://github.com/LinkedDataFragments/Server.js/issues"
   },
   "scripts": {
-    "test": "nyc mocha",
+    "test": "vitest run --root ../.. packages/datasource-sparql/test",
     "lint": "eslint bin/* lib test"
   },
   "dependencies": {
