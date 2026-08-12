@@ -4,6 +4,7 @@ summaries
 *.log
 *.hdt.index*
 .nyc_output
+coverage
 
 # Ignore deployment configuration files, but keep defaults and examples
 config.json
