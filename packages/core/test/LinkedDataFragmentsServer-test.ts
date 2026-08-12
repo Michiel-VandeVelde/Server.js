@@ -22,8 +22,8 @@ describe('LinkedDataFragmentsServer', () => {
     let server: ReturnType<typeof LinkedDataFragmentsServer>, controller: FakeController, client: request.Agent;
     beforeAll(() => {
       controller = {
-        handleRequest: sinon.spy((req: { url?: string }, response: { end: (body: string) => void }, next: () => void) => {
-          switch (req.url) {
+        handleRequest: sinon.spy((request: { url?: string }, response: { end: (body: string) => void }, next: () => void) => {
+          switch (request.url) {
           case '/handle':
             response.end('body contents');
             break;
@@ -113,8 +113,8 @@ describe('LinkedDataFragmentsServer', () => {
     let server: ReturnType<typeof LinkedDataFragmentsServer>, controllerA: FakeController, controllerB: FakeController, client: request.Agent;
     beforeAll(() => {
       controllerA = {
-        handleRequest: sinon.spy((req: { url?: string }, response: { end: (body: string) => void }, next: () => void) => {
-          switch (req.url) {
+        handleRequest: sinon.spy((request: { url?: string }, response: { end: (body: string) => void }, next: () => void) => {
+          switch (request.url) {
           case '/handleA':
             response.end('body contents A');
             break;
@@ -126,8 +126,8 @@ describe('LinkedDataFragmentsServer', () => {
         }),
       };
       controllerB = {
-        handleRequest: sinon.spy((req: { url?: string }, response: { end: (body: string) => void }, next: (error?: Error) => void) => {
-          switch (req.url) {
+        handleRequest: sinon.spy((request: { url?: string }, response: { end: (body: string) => void }, next: (error?: Error) => void) => {
+          switch (request.url) {
           case '/handleB':
             response.end('body contents B');
             break;

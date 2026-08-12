@@ -6,6 +6,10 @@ import type { Quad } from 'rdf-js';
 
 const dataFactory = N3.DataFactory;
 
+class TestableMemoryDatasource extends MemoryDatasource {
+  get testUrl() { return this._url; }
+}
+
 describe('MemoryDatasource', () => {
   describe('The MemoryDatasource module', () => {
     it('should be a function', () => {
@@ -23,15 +27,15 @@ describe('MemoryDatasource', () => {
 
   describe('A MemoryDatasource instance with a bare file path', () => {
     it('should prepend the file:// protocol', () => {
-      let datasource = new MemoryDatasource({ dataFactory, file: '/tmp/example.ttl' }) as any;
-      expect(datasource._url).toBe('file:///tmp/example.ttl');
+      let datasource = new TestableMemoryDatasource({ dataFactory, file: '/tmp/example.ttl' });
+      expect(datasource.testUrl).toBe('file:///tmp/example.ttl');
     });
   });
 
   describe('A MemoryDatasource instance with an already-prefixed file path', () => {
     it('should leave the protocol untouched', () => {
-      let datasource = new MemoryDatasource({ dataFactory, file: 'file:///tmp/example.ttl' }) as any;
-      expect(datasource._url).toBe('file:///tmp/example.ttl');
+      let datasource = new TestableMemoryDatasource({ dataFactory, file: 'file:///tmp/example.ttl' });
+      expect(datasource.testUrl).toBe('file:///tmp/example.ttl');
     });
   });
 

@@ -9,8 +9,20 @@ import { UrlData } from '@ldf/core/lib/UrlData';
 import * as N3 from 'n3';
 import { sinon } from '../../../../test/sinon';
 import { DummyServer, type DummyController } from '../../../../test/DummyServer';
+import type { SinonSpyLike } from '../../../../test/sinon-types';
+import type { Datasource } from '@ldf/core/lib/datasources/Datasource';
+import type { DatasourceRegistry, Query, RouterRequest } from '@ldf/core';
 
 const dataFactory = N3.DataFactory;
+
+type SpiedView<T> = T & { render: SinonSpyLike };
+interface FakeRouter { extractQueryParams: SinonSpyLike; }
+interface FakeDatasource {
+  title?: string;
+  supportsQuery: SinonSpyLike;
+  select: SinonSpyLike;
+  supportedFeatures: Record<string, boolean>;
+}
 
 describe('QuadPatternFragmentsController', () => {
   describe('The QuadPatternFragmentsController module', () => {
@@ -25,16 +37,17 @@ describe('QuadPatternFragmentsController', () => {
 
   describe('A QuadPatternFragmentsController instance with 3 routers', () => {
     let controller: QuadPatternFragmentsController & DummyController, client: ReturnType<typeof request.agent>;
-    let routerA: any, routerB: any, routerC: any, datasource: any, datasources: any, view: QuadPatternFragmentsRdfView, prefixes: any;
+    let routerA: FakeRouter, routerB: FakeRouter, routerC: FakeRouter, datasource: FakeDatasource,
+        datasources: DatasourceRegistry, view: SpiedView<QuadPatternFragmentsRdfView>, prefixes: Record<string, string>;
     beforeAll(() => {
       routerA = { extractQueryParams: sinon.stub() };
       routerB = { extractQueryParams: sinon.stub().throws(new Error('second router error')) };
       routerC = {
-        extractQueryParams: sinon.spy((req: any, query: any) => {
-          query.features.datasource = true;
-          query.features.other = true;
+        extractQueryParams: sinon.spy((request: RouterRequest, query: Query) => {
+          query.features!.datasource = true;
+          query.features!.other = true;
           query.datasource = '/my-datasource';
-          query.other = 'other';
+          (query as Query & { other?: string }).other = 'other';
         }),
       };
       datasource = {
@@ -43,8 +56,8 @@ describe('QuadPatternFragmentsController', () => {
         select: sinon.stub().returns({ stream: 'items' }),
         supportedFeatures: { quadPattern: true },
       };
-      datasources = { 'my-datasource': datasource };
-      view = new QuadPatternFragmentsRdfView({ dataFactory });
+      datasources = { 'my-datasource': datasource as unknown as Datasource };
+      view = new QuadPatternFragmentsRdfView({ dataFactory }) as SpiedView<QuadPatternFragmentsRdfView>;
       sinon.spy(view, 'render');
       prefixes = { a: 'a' };
       controller = new QuadPatternFragmentsController({
@@ -53,7 +66,7 @@ describe('QuadPatternFragmentsController', () => {
         datasources: datasources,
         views: [view],
         prefixes: prefixes,
-      } as any) as QuadPatternFragmentsController & DummyController;
+      }) as QuadPatternFragmentsController & DummyController;
       client = request.agent(DummyServer(controller));
     });
     function resetAll() {
@@ -116,8 +129,8 @@ describe('QuadPatternFragmentsController', () => {
       });
 
       it('should pass the query result to the output view', () => {
-        expect((view.render as any).calledOnce).toBe(true);
-        let args = (view.render as any).firstCall.args;
+        expect(view.render.calledOnce).toBe(true);
+        let args = view.render.firstCall.args;
 
         expect(typeof args[0]).toBe('object'); // settings
         expect(args[1]).toBeInstanceOf(http.IncomingMessage);
@@ -125,9 +138,9 @@ describe('QuadPatternFragmentsController', () => {
       });
 
       it('should pass the correct settings to the view', () => {
-        expect((view.render as any).calledOnce).toBe(true);
+        expect(view.render.calledOnce).toBe(true);
         let query = routerC.extractQueryParams.firstCall.args[1];
-        let settings = (view.render as any).firstCall.args[0];
+        let settings = view.render.firstCall.args[0];
 
         expect(settings.datasource).toHaveProperty('title', 'My data');
         expect(settings.datasource).toHaveProperty('index', 'https://example.org/#dataset');
@@ -171,12 +184,13 @@ describe('QuadPatternFragmentsController', () => {
   });
 
   describe('A QuadPatternFragmentsController instance with 2 views', () => {
-    let controller: QuadPatternFragmentsController, client: ReturnType<typeof request.agent>, htmlView: QuadPatternFragmentsHtmlView, rdfView: QuadPatternFragmentsRdfView;
+    let controller: QuadPatternFragmentsController, client: ReturnType<typeof request.agent>,
+        htmlView: SpiedView<QuadPatternFragmentsHtmlView>, rdfView: SpiedView<QuadPatternFragmentsRdfView>;
     beforeAll(() => {
-      let datasource = {
+      let datasource: FakeDatasource = {
         supportsQuery: sinon.stub().returns(true),
         select: sinon.stub().returns({
-          on: (event: string, callback: (...args: any[]) => void) => {
+          on: (event: string, callback: (...args: unknown[]) => void) => {
             if (event === 'end' || event === 'metadata')
               setImmediate(callback, {});
           },
@@ -184,29 +198,29 @@ describe('QuadPatternFragmentsController', () => {
         supportedFeatures: { triplePattern: true },
       };
       let router = {
-        extractQueryParams: (req: any, query: any) => {
-          query.features.datasource = true;
+        extractQueryParams: (request: RouterRequest, query: Query) => {
+          query.features!.datasource = true;
           query.datasource = '/my-datasource';
         },
       };
-      htmlView = new QuadPatternFragmentsHtmlView();
-      rdfView = new QuadPatternFragmentsRdfView({ dataFactory });
+      htmlView = new QuadPatternFragmentsHtmlView() as SpiedView<QuadPatternFragmentsHtmlView>;
+      rdfView = new QuadPatternFragmentsRdfView({ dataFactory }) as SpiedView<QuadPatternFragmentsRdfView>;
       sinon.spy(htmlView, 'render');
       sinon.spy(rdfView, 'render');
       controller = new QuadPatternFragmentsController({
         routers: [router],
-        datasources: { 'my-datasource': datasource },
+        datasources: { 'my-datasource': datasource as unknown as Datasource },
         views: [htmlView, rdfView],
-      } as any);
-      client = request.agent(DummyServer(controller as any));
+      });
+      client = request.agent(DummyServer(controller));
     });
     function resetAll() {
-      (htmlView.render as any).reset();
-      (rdfView.render as any).reset();
+      htmlView.render.reset();
+      rdfView.render.reset();
     }
 
     describe('receiving a request without Accept header', () => {
-      let response: any;
+      let response: request.Response;
       beforeAll(() => new Promise<void>((done) => {
         resetAll();
         void client.get('/my-datasource')
@@ -214,7 +228,7 @@ describe('QuadPatternFragmentsController', () => {
       }));
 
       it('should call the default view', () => {
-        expect((htmlView.render as any).calledOnce).toBe(true);
+        expect(htmlView.render.calledOnce).toBe(true);
       });
 
       it('should set the text/html content type', () => {
@@ -227,7 +241,7 @@ describe('QuadPatternFragmentsController', () => {
     });
 
     describe('receiving a request with an Accept header of */*', () => {
-      let response: any;
+      let response: request.Response;
       beforeAll(() => new Promise<void>((done) => {
         resetAll();
         void client.get('/my-datasource').set('Accept', '*/*')
@@ -235,7 +249,7 @@ describe('QuadPatternFragmentsController', () => {
       }));
 
       it('should call the HTML view', () => {
-        expect((htmlView.render as any).calledOnce).toBe(true);
+        expect(htmlView.render.calledOnce).toBe(true);
       });
 
       it('should set the text/html content type', () => {
@@ -248,7 +262,7 @@ describe('QuadPatternFragmentsController', () => {
     });
 
     describe('receiving a request with an Accept header of text/html', () => {
-      let response: any;
+      let response: request.Response;
       beforeAll(() => new Promise<void>((done) => {
         resetAll();
         void client.get('/my-datasource').set('Accept', 'text/html')
@@ -256,7 +270,7 @@ describe('QuadPatternFragmentsController', () => {
       }));
 
       it('should call the HTML view', () => {
-        expect((htmlView.render as any).calledOnce).toBe(true);
+        expect(htmlView.render.calledOnce).toBe(true);
       });
 
       it('should set the text/html content type', () => {
@@ -269,7 +283,7 @@ describe('QuadPatternFragmentsController', () => {
     });
 
     describe('receiving a request with an Accept header of text/turtle', () => {
-      let response: any;
+      let response: request.Response;
       beforeAll(() => new Promise<void>((done) => {
         resetAll();
         void client.get('/my-datasource').set('Accept', 'text/turtle')
@@ -277,7 +291,7 @@ describe('QuadPatternFragmentsController', () => {
       }));
 
       it('should call the Turtle view', () => {
-        expect((rdfView.render as any).calledOnce).toBe(true);
+        expect(rdfView.render.calledOnce).toBe(true);
       });
 
       it('should set the text/turtle content type', () => {
@@ -290,7 +304,7 @@ describe('QuadPatternFragmentsController', () => {
     });
 
     describe('receiving a request with an Accept header of text/n3', () => {
-      let response: any;
+      let response: request.Response;
       beforeAll(() => new Promise<void>((done) => {
         resetAll();
         void client.get('/my-datasource').set('Accept', 'text/n3')
@@ -298,7 +312,7 @@ describe('QuadPatternFragmentsController', () => {
       }));
 
       it('should call the Turtle view', () => {
-        expect((rdfView.render as any).calledOnce).toBe(true);
+        expect(rdfView.render.calledOnce).toBe(true);
       });
 
       it('should set the text/n3 content type', () => {
@@ -314,26 +328,26 @@ describe('QuadPatternFragmentsController', () => {
   describe('A QuadPatternFragmentsController instance without matching view', () => {
     let controller: QuadPatternFragmentsController, client: ReturnType<typeof request.agent>;
     beforeAll(() => {
-      let datasource = {
+      let datasource: FakeDatasource = {
         supportsQuery: sinon.stub().returns(true),
         select: sinon.stub(),
         supportedFeatures: { triplePattern: true },
       };
       let router = {
-        extractQueryParams: (req: any, query: any) => {
-          query.features.datasource = true;
+        extractQueryParams: (request: RouterRequest, query: Query) => {
+          query.features!.datasource = true;
           query.datasource = '/my-datasource';
         },
       };
       controller = new QuadPatternFragmentsController({
         routers: [router],
-        datasources: { 'my-datasource': datasource },
-      } as any);
-      client = request.agent(DummyServer(controller as any));
+        datasources: { 'my-datasource': datasource as unknown as Datasource },
+      });
+      client = request.agent(DummyServer(controller));
     });
 
     describe('receiving a request without Accept header', () => {
-      let response: any;
+      let response: request.Response;
       beforeAll(() => new Promise<void>((done) => {
         void client.get('/my-datasource')
           .end((error: Error, res: request.Response) => { response = res; done(); });
@@ -353,7 +367,7 @@ describe('QuadPatternFragmentsController', () => {
     });
 
     describe('receiving a request with an Accept header of text/html', () => {
-      let response: any;
+      let response: request.Response;
       beforeAll(() => new Promise<void>((done) => {
         void client.get('/my-datasource').set('Accept', 'text/html')
           .end((error: Error, res: request.Response) => { response = res; done(); });
@@ -374,11 +388,12 @@ describe('QuadPatternFragmentsController', () => {
   });
 
   describe('A QuadPatternFragmentsController instance with a datasource that synchronously errors', () => {
-    let controller: QuadPatternFragmentsController & DummyController, client: ReturnType<typeof request.agent>, router: any, datasource: any, error: Error, view: QuadPatternFragmentsRdfView;
+    let controller: QuadPatternFragmentsController & DummyController, client: ReturnType<typeof request.agent>,
+        router: FakeRouter, datasource: FakeDatasource, error: Error, view: QuadPatternFragmentsRdfView;
     beforeAll(() => {
       router = {
-        extractQueryParams: sinon.spy((req: any, query: any) => {
-          query.features.datasource = true;
+        extractQueryParams: sinon.spy((request: RouterRequest, query: Query) => {
+          query.features!.datasource = true;
           query.datasource = '/my-datasource';
         }),
       };
@@ -392,8 +407,8 @@ describe('QuadPatternFragmentsController', () => {
       controller = new QuadPatternFragmentsController({
         routers: [router],
         views: [view],
-        datasources: { '/my-datasource': datasource },
-      } as any) as QuadPatternFragmentsController & DummyController;
+        datasources: { '/my-datasource': datasource as unknown as Datasource },
+      }) as QuadPatternFragmentsController & DummyController;
       client = request.agent(DummyServer(controller));
     });
     function resetAll() {
@@ -413,27 +428,30 @@ describe('QuadPatternFragmentsController', () => {
   });
 
   describe('A QuadPatternFragmentsController instance with a datasource that asynchronously errors', () => {
-    let controller: QuadPatternFragmentsController & DummyController, client: ReturnType<typeof request.agent>, router: any, datasource: any, error: Error, view: QuadPatternFragmentsRdfView;
+    let controller: QuadPatternFragmentsController & DummyController, client: ReturnType<typeof request.agent>,
+        router: FakeRouter,
+        datasource: { supportsQuery: SinonSpyLike; select: (query: Query, callback: (error?: Error) => void) => void; supportedFeatures: Record<string, boolean> },
+        error: Error, view: SpiedView<QuadPatternFragmentsRdfView>;
     beforeAll(() => {
       router = {
-        extractQueryParams: sinon.spy((req: any, query: any) => {
-          query.features.datasource = true;
+        extractQueryParams: sinon.spy((request: RouterRequest, query: Query) => {
+          query.features!.datasource = true;
           query.datasource = '/my-datasource';
         }),
       };
       error = new Error('datasource error');
       datasource = {
         supportsQuery: sinon.stub().returns(true),
-        select: (query: any, callback: (error: Error) => void) => { setImmediate(callback.bind(null, error)); },
+        select: (query: Query, callback: (error?: Error) => void) => { setImmediate(callback.bind(null, error)); },
         supportedFeatures: { triplePattern: true },
       };
-      view = new QuadPatternFragmentsRdfView({ dataFactory });
-      view.render = sinon.stub() as any; // avoid writing a partial body
+      view = new QuadPatternFragmentsRdfView({ dataFactory }) as SpiedView<QuadPatternFragmentsRdfView>;
+      view.render = sinon.stub(); // avoid writing a partial body
       controller = new QuadPatternFragmentsController({
         routers: [router],
         views: [view],
-        datasources: { 'my-datasource': datasource },
-      } as any) as QuadPatternFragmentsController & DummyController;
+        datasources: { 'my-datasource': datasource as unknown as Datasource },
+      }) as QuadPatternFragmentsController & DummyController;
       client = request.agent(DummyServer(controller));
     });
     function resetAll() {

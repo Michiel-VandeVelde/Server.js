@@ -8,18 +8,42 @@ import * as path from 'path';
 import { EventEmitter } from 'events';
 import * as N3 from 'n3';
 import { sinon } from '../../../../test/sinon';
+import type { SinonSpyLike } from '../../../../test/sinon-types';
+import type { Quad, Quad_Graph } from 'rdf-js';
+import type { BufferedIterator } from 'asynciterator';
+import type { Query, DatasourceOptions, DatasourceRegistry } from '@ldf/core';
 
 const dataFactory = N3.DataFactory;
+
+class TestableCompositeDatasource extends CompositeDatasource {
+  get testDatasourceNames() { return this._datasourceNames; }
+  callExecuteQuery(query: Query, destination: BufferedIterator<Quad>) {
+    return this._executeQuery(query, destination);
+  }
+}
+
+interface FakeDatasourceOptions {
+  quads?: Quad[];
+  graph?: Quad_Graph;
+  enabled?: boolean;
+  supportedFeatures?: Record<string, boolean>;
+  supportsQuery?: boolean;
+  hasExactCount?: boolean;
+}
+
+type FakeDatasource = Datasource & { select: SinonSpyLike };
+type FakeMetadata = { totalCount: number; hasExactCount: boolean };
+type FakeIterator = EventEmitter & { getProperty(name: string, callback: (metadata: FakeMetadata) => void): void };
 
 // A lightweight stand-in for a Datasource, for exercising CompositeDatasource
 // edge cases (large/inexact counts, graph mismatches) that would be
 // impractical to set up with real HDT/N3 fixture files.
-function fakeQuads(count: number): any[] {
-  let quads = [];
-  for (let i = 0; i < count; i++) quads.push({});
+function fakeQuads(count: number): Quad[] {
+  let quads: Quad[] = [];
+  for (let i = 0; i < count; i++) quads.push({} as unknown as Quad);
   return quads;
 }
-function fakeDatasource(options: any = {}): any {
+function fakeDatasource(options: FakeDatasourceOptions = {}): FakeDatasource {
   let quads = options.quads || [];
   return {
     enabled: options.enabled,
@@ -27,18 +51,18 @@ function fakeDatasource(options: any = {}): any {
     supportedFeatures: options.supportedFeatures || { triplePattern: true, quadPattern: true, limit: true, offset: true, totalCount: true },
     supportsQuery: () => options.supportsQuery !== false,
     select: sinon.spy(() => {
-      let iterator: any = new EventEmitter();
-      iterator.getProperty = (name: string, callback: (metadata: any) => void) => {
+      let iterator = new EventEmitter() as FakeIterator;
+      iterator.getProperty = (name, callback) => {
         if (name === 'metadata')
           callback({ totalCount: quads.length, hasExactCount: options.hasExactCount !== false });
       };
       setImmediate(() => {
-        quads.forEach((quad: any) => iterator.emit('data', quad));
+        quads.forEach((quad) => iterator.emit('data', quad));
         iterator.emit('end');
       });
       return iterator;
     }),
-  };
+  } as unknown as FakeDatasource;
 }
 
 let exampleHdtFile = path.join(__dirname, '../../../../test/assets/test.hdt');
@@ -46,8 +70,16 @@ let exampleHdtFileWithBlanks = path.join(__dirname, '../../../../test/assets/tes
 let exampleTurtleUrl = 'file://' + path.join(__dirname, '../../../../test/assets/test.ttl');
 let exampleTrigUrl = 'file://' + path.join(__dirname, '../../../../test/assets/test.trig');
 
+interface DatasourceReferenceConfig {
+  dataFactory: typeof dataFactory;
+  settings: DatasourceOptions;
+  datasourceType: new (options: DatasourceOptions) => Datasource;
+  size: number;
+}
+type SizedDatasource = Datasource & { size: number };
+
 describe('CompositeDatasource', () => {
-  let references: Record<string, any> = {
+  let references: Record<string, DatasourceReferenceConfig> = {
     data0: { dataFactory, settings: { dataFactory, file: exampleHdtFile }, datasourceType: HdtDatasource, size: 132 },
     data1: { dataFactory, settings: { dataFactory, file: exampleHdtFileWithBlanks, graph: 'http://example.org/graph0' }, datasourceType: HdtDatasource, size: 6 },
     data2: { dataFactory, settings: { dataFactory, url: exampleTurtleUrl }, datasourceType: N3Datasource, size: 129 },
@@ -57,16 +89,16 @@ describe('CompositeDatasource', () => {
     let datasource = references[datasourceId];
     let DatasourceType = datasource.datasourceType;
     let size = references[datasourceId].size;
-    references[datasourceId] = new DatasourceType(datasource.settings);
-    references[datasourceId].size = size;
+    references[datasourceId] = new DatasourceType(datasource.settings) as unknown as DatasourceReferenceConfig;
+    (references[datasourceId] as unknown as SizedDatasource).size = size;
   });
   let totalSize: number = Object.keys(references).reduce((acc, key) => {
-    return acc + (references[key].size as number);
+    return acc + (references[key] as unknown as SizedDatasource).size;
   }, 0);
 
   beforeAll(() => Promise.all(Object.keys(references).map((key) => new Promise<void>((resolve) => {
-    references[key].initialize();
-    references[key].on('initialized', resolve);
+    (references[key] as unknown as Datasource).initialize();
+    (references[key] as unknown as Datasource).on('initialized', resolve);
   }))));
 
   describe('The CompositeDatasource module', () => {
@@ -75,19 +107,19 @@ describe('CompositeDatasource', () => {
     });
 
     it('should be an CompositeDatasource constructor', () => new Promise<void>((done) => {
-      let instance = new CompositeDatasource({ references: references, dataFactory });
+      let instance = new CompositeDatasource({ references: references as unknown as DatasourceRegistry, dataFactory });
       expect(instance).toBeInstanceOf(CompositeDatasource);
       instance.close(done);
     }));
 
     it('should create CompositeDatasource objects', () => new Promise<void>((done) => {
-      let instance = new CompositeDatasource({ references: references, dataFactory });
+      let instance = new CompositeDatasource({ references: references as unknown as DatasourceRegistry, dataFactory });
       expect(instance).toBeInstanceOf(CompositeDatasource);
       instance.close(done);
     }));
 
     it('should create Datasource objects', () => new Promise<void>((done) => {
-      let instance = new CompositeDatasource({ references: references, dataFactory });
+      let instance = new CompositeDatasource({ references: references as unknown as DatasourceRegistry, dataFactory });
       expect(instance).toBeInstanceOf(Datasource);
       instance.close(done);
     }));
@@ -97,7 +129,7 @@ describe('CompositeDatasource', () => {
     let datasource: CompositeDatasource;
     function getDatasource() { return datasource; }
     beforeAll(() => new Promise<void>((done) => {
-      datasource = new CompositeDatasource({ references: references, dataFactory });
+      datasource = new CompositeDatasource({ references: references as unknown as DatasourceRegistry, dataFactory });
       datasource.initialize();
       datasource.on('initialized', done);
     }));
@@ -195,21 +227,21 @@ describe('CompositeDatasource', () => {
     it('should throw without a references option', () => {
       expect(() => {
         // eslint-disable-next-line no-new
-        new CompositeDatasource({ dataFactory } as any);
+        new CompositeDatasource({ dataFactory });
       }).toThrow('A CompositeDatasource requires a `references` array of datasource id\'s in its settings.');
     });
 
     it('should throw when a referenced datasource is missing', () => {
       expect(() => {
         // eslint-disable-next-line no-new
-        new CompositeDatasource({ dataFactory, references: { a: null } } as any);
+        new CompositeDatasource({ dataFactory, references: { a: null as unknown as Datasource } });
       }).toThrow('No datasource a could be found!');
     });
 
     it('should exclude disabled datasources', () => new Promise<void>((done) => {
       let a = fakeDatasource({ enabled: false }), b = fakeDatasource({});
-      let instance = new CompositeDatasource({ dataFactory, references: { a, b } });
-      expect((instance as any)._datasourceNames).toEqual(['b']);
+      let instance = new TestableCompositeDatasource({ dataFactory, references: { a, b } });
+      expect(instance.testDatasourceNames).toEqual(['b']);
       instance.close(done);
     }));
   });
@@ -218,7 +250,7 @@ describe('CompositeDatasource', () => {
     it('should return false when no referenced datasource supports the query', () => {
       let a = fakeDatasource({ supportsQuery: false });
       let instance = new CompositeDatasource({ dataFactory, references: { a } });
-      expect(instance.supportsQuery({ features: {} } as any)).toBe(false);
+      expect(instance.supportsQuery({ features: {} })).toBe(false);
     });
   });
 
@@ -232,9 +264,9 @@ describe('CompositeDatasource', () => {
       let instance = new CompositeDatasource({ dataFactory, references: { a, b } });
       instance.initialize();
       instance.on('initialized', () => {
-        let results: any[] = [];
-        let stream = instance.select({ graph: graphB, features: { quadPattern: true } } as any);
-        stream.on('data', (quad: any) => results.push(quad));
+        let results: Quad[] = [];
+        let stream = instance.select({ graph: graphB, features: { quadPattern: true } });
+        stream.on('data', (quad: Quad) => results.push(quad));
         stream.on('end', () => {
           expect(results.length).toBe(3);
           expect(a.select.called).toBe(false);
@@ -252,9 +284,9 @@ describe('CompositeDatasource', () => {
       let instance = new CompositeDatasource({ dataFactory, references: { b, a } });
       instance.initialize();
       instance.on('initialized', () => {
-        let results: any[] = [];
-        let stream = instance.select({ graph: graphB, limit: 10, features: { quadPattern: true, limit: true } } as any);
-        stream.on('data', (quad: any) => results.push(quad));
+        let results: Quad[] = [];
+        let stream = instance.select({ graph: graphB, limit: 10, features: { quadPattern: true, limit: true } });
+        stream.on('data', (quad: Quad) => results.push(quad));
         stream.on('end', () => {
           expect(results.length).toBe(3);
           expect(a.select.called).toBe(false);
@@ -265,7 +297,7 @@ describe('CompositeDatasource', () => {
   });
 
   describe('A CompositeDatasource needing an exact count', () => {
-    let a: any, instance: CompositeDatasource, query: any;
+    let a: FakeDatasource, instance: CompositeDatasource, query: Query;
     beforeAll(() => new Promise<void>((done) => {
       a = fakeDatasource({ quads: fakeQuads(1001), hasExactCount: false });
       instance = new CompositeDatasource({ dataFactory, references: { a } });
@@ -276,7 +308,7 @@ describe('CompositeDatasource', () => {
 
     it('should compute an exact count when the inexact metadata is not enough', () => new Promise<void>((done) => {
       let stream = instance.select(query), totalCount: number;
-      stream.getProperty('metadata', (metadata: any) => { totalCount = metadata.totalCount; });
+      stream.getProperty<{ totalCount: number }>('metadata', (metadata) => { totalCount = metadata.totalCount; });
       stream.on('data', () => {});
       stream.on('end', () => { expect(totalCount).toBe(1001); done(); });
     }));
@@ -284,7 +316,7 @@ describe('CompositeDatasource', () => {
     it('should use the cached exact count on a repeated identical query', () => new Promise<void>((done) => {
       let selectCallsBefore: number = a.select.callCount;
       let stream = instance.select(query), totalCount: number;
-      stream.getProperty('metadata', (metadata: any) => { totalCount = metadata.totalCount; });
+      stream.getProperty<{ totalCount: number }>('metadata', (metadata) => { totalCount = metadata.totalCount; });
       stream.on('data', () => {});
       stream.on('end', () => {
         expect(totalCount).toBe(1001);
@@ -296,7 +328,7 @@ describe('CompositeDatasource', () => {
   });
 
   describe('A CompositeDatasource with a manually-computed count of 1000 or fewer', () => {
-    let a: any, instance: CompositeDatasource, query: any;
+    let a: FakeDatasource, instance: CompositeDatasource, query: Query;
     beforeAll(() => new Promise<void>((done) => {
       a = fakeDatasource({ quads: fakeQuads(5), hasExactCount: false });
       instance = new CompositeDatasource({ dataFactory, references: { a } });
@@ -308,7 +340,7 @@ describe('CompositeDatasource', () => {
     it('should recompute the exact count on every repeated query, since it is never cached', () => new Promise<void>((done) => {
       let selectCallsBefore: number = a.select.callCount;
       let stream = instance.select(query), totalCount: number;
-      stream.getProperty('metadata', (metadata: any) => { totalCount = metadata.totalCount; });
+      stream.getProperty<{ totalCount: number }>('metadata', (metadata) => { totalCount = metadata.totalCount; });
       stream.on('data', () => {});
       stream.on('end', () => {
         expect(totalCount).toBe(5);
@@ -321,33 +353,33 @@ describe('CompositeDatasource', () => {
 
   describe('_executeQuery pushing a falsy result element', () => {
     it('should not count a falsy element, but still forward it to the destination', () => new Promise<void>((done) => {
-      let a = fakeDatasource({ quads: [null, {}] });
-      let instance = new CompositeDatasource({ dataFactory, references: { a } });
+      let a = fakeDatasource({ quads: [null, {}] as unknown as Quad[] });
+      let instance = new TestableCompositeDatasource({ dataFactory, references: { a } });
       instance.initialize();
       instance.on('initialized', () => {
-        let pushed: any[] = [];
+        let pushed: Quad[] = [];
         let destination = {
           setProperty: () => {},
-          _push: (element: any) => pushed.push(element),
+          _push: (element: Quad) => pushed.push(element),
           close: () => {
             expect(pushed).toEqual([null, {}]);
             done();
           },
-        };
-        (instance as any)._executeQuery({ offset: 0, limit: 10 }, destination);
+        } as unknown as BufferedIterator<Quad>;
+        instance.callExecuteQuery({ offset: 0, limit: 10 }, destination);
       });
     }));
   });
 });
 
-function itShouldExecute(getDatasource: () => CompositeDatasource, name: string, query: any,
-  expectedResultsCount: number, expectedTotalCount: number, expectedTriples?: any[]) {
+function itShouldExecute(getDatasource: () => CompositeDatasource, name: string, query: Query,
+  expectedResultsCount: number, expectedTotalCount: number, expectedTriples?: Quad[]) {
   describe('executing ' + name, () => {
-    let resultsCount = 0, totalCount: number, triples: any[] = [];
+    let resultsCount = 0, totalCount: number, triples: Quad[] = [];
     beforeAll(() => new Promise<void>((done) => {
       let result = getDatasource().select(query);
-      result.getProperty('metadata', (metadata: any) => { totalCount = metadata.totalCount; });
-      result.on('data', (triple: any) => { resultsCount++; expectedTriples && triples.push(triple); });
+      result.getProperty<{ totalCount: number }>('metadata', (metadata) => { totalCount = metadata.totalCount; });
+      result.on('data', (triple: Quad) => { resultsCount++; expectedTriples && triples.push(triple); });
       result.on('end', done);
     }));
 

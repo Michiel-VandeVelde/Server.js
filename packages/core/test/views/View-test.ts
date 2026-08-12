@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { View } from '@ldf/core/lib/views';
 import { resolve } from 'path';
 import { sinon } from '../../../../test/sinon';
-import type { LdfResponse } from '@ldf/core';
+import type { LdfRequest, LdfResponse, ViewSettings } from '@ldf/core';
 
 describe('View', () => {
   describe('The View module', () => {
@@ -26,6 +26,12 @@ describe('View', () => {
     describe('created with a name', () => {
       it('should set the name', () => {
         expect(new View('MyView')).toHaveProperty('name', 'MyView');
+      });
+    });
+
+    describe('created without a name', () => {
+      it('should have the empty string as name', () => {
+        expect(new View()).toHaveProperty('name', '');
       });
     });
 
@@ -64,7 +70,7 @@ describe('View', () => {
     describe('without _render method', () => {
       it('should throw an error on calling render', () => {
         let response = { getHeader: sinon.stub() };
-        expect(() => { new View().render(null as any, null as any, response as unknown as LdfResponse); })
+        expect(() => { new View().render(null as unknown as ViewSettings, null as unknown as LdfRequest, response as unknown as LdfResponse); })
           .toThrow('The _render method is not yet implemented.');
       });
     });
@@ -72,10 +78,10 @@ describe('View', () => {
     describe('created without defaults', () => {
       it('should call _render with the given options', () => {
         let view = new View() as View & { _render: ReturnType<typeof sinon.spy> },
-            request = {}, response = { getHeader: sinon.stub().returns('text/html') },
+            request = {} as unknown as LdfRequest, response = { getHeader: sinon.stub().returns('text/html') },
             options = { a: 'b' };
         view._render = sinon.spy();
-        view.render(options as any, request as any, response as unknown as LdfResponse, noop);
+        view.render(options, request, response as unknown as LdfResponse, noop);
         expect(response.getHeader.calledOnce).toBe(true);
         expect(response.getHeader.calledWith('Content-Type')).toBe(true);
         expect(view._render.getCall(0).args).toHaveLength(4);
@@ -93,11 +99,11 @@ describe('View', () => {
 
     describe('created with defaults', () => {
       it('should call _render with the combined defaults and options', () => {
-        let view = new View(undefined, undefined, { c: 'd' } as any) as View & { _render: ReturnType<typeof sinon.spy> },
-            request = {}, response = { getHeader: sinon.stub().returns('text/html') },
+        let view = new View(undefined, undefined, { c: 'd' }) as View & { _render: ReturnType<typeof sinon.spy> },
+            request = {} as unknown as LdfRequest, response = { getHeader: sinon.stub().returns('text/html') },
             options = { a: 'b' };
         view._render = sinon.spy();
-        view.render(options as any, request as any, response as unknown as LdfResponse, noop);
+        view.render(options, request, response as unknown as LdfResponse, noop);
         expect(response.getHeader.calledOnce).toBe(true);
         expect(response.getHeader.calledWith('Content-Type')).toBe(true);
         expect(view._render.calledOnce).toBe(true);

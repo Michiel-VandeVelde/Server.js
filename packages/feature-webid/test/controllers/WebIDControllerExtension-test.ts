@@ -4,6 +4,27 @@ import { WebIDControllerExtension } from '@ldf/feature-webid/lib/controllers';
 import { Controller } from '@ldf/core/lib/controllers';
 import { UrlData } from '@ldf/core/lib/UrlData';
 import { sinon } from '../../../../test/sinon';
+import type { LdfRequest, LdfResponse } from '@ldf/core';
+
+// ForbiddenOptions isn't exported by the lib module; this mirrors its shape
+// structurally so the wrapper below can be typed without reaching into
+// the lib's internals.
+interface FakeForbiddenOptions {
+  webID?: string;
+  reason?: string;
+}
+
+// Construction always throws (see below), so tests can't go through `new`;
+// this subclass only adds public wrappers reachable via Object.create.
+class TestableWebIDControllerExtension extends WebIDControllerExtension {
+  setProtocol(protocol: string) { this._protocol = protocol; }
+  callHandleRequest(request: LdfRequest, response: LdfResponse, next: (error?: Error) => void) {
+    return this._handleRequest(request, response, next);
+  }
+  callHandleNotAcceptable(request: LdfRequest, response: LdfResponse, options: ((error?: Error) => void) | FakeForbiddenOptions) {
+    return this._handleNotAcceptable(request, response, options);
+  }
+}
 
 describe('WebIDControllerExtension', () => {
   describe('The WebIDControllerExtension module', () => {
@@ -37,21 +58,21 @@ describe('WebIDControllerExtension', () => {
   // than through `new`, since construction itself always throws (see above).
   describe('_handleRequest', () => {
     it('should call next without inspecting the request when the protocol is not https', () => {
-      let instance = Object.create(WebIDControllerExtension.prototype);
-      instance._protocol = 'http';
+      let instance = Object.create(TestableWebIDControllerExtension.prototype) as TestableWebIDControllerExtension;
+      instance.setProtocol('http');
       let next = sinon.spy();
-      instance._handleRequest({}, {}, next);
+      instance.callHandleRequest({} as LdfRequest, {} as LdfResponse, next);
       expect(next.calledOnce).toBe(true);
       expect(next.calledWithExactly()).toBe(true);
     });
   });
 
   describe('_handleNotAcceptable', () => {
-    function handle(options: any) {
-      let instance = Object.create(WebIDControllerExtension.prototype);
+    function handle(options: FakeForbiddenOptions) {
+      let instance = Object.create(TestableWebIDControllerExtension.prototype) as TestableWebIDControllerExtension;
       let written: string | undefined;
-      let response = { writeHead: sinon.spy(), end: (text: string) => { written = text; } };
-      instance._handleNotAcceptable({ url: '/foo' }, response, options);
+      let response = { writeHead: sinon.spy(), end: (text: string) => { written = text; } } as unknown as LdfResponse;
+      instance.callHandleNotAcceptable({ url: '/foo' } as unknown as LdfRequest, response, options);
       return written;
     }
 

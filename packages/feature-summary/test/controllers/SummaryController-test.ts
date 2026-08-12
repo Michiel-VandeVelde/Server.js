@@ -26,7 +26,7 @@ interface SupertestStatic {
 const request = require('supertest') as SupertestStatic;
 
 interface FakeController {
-  next: { calledOnce: boolean; called: boolean };
+  next: { calledOnce: boolean; called: boolean } & ((error?: Error) => void);
 }
 
 describe('SummaryController', () => {
@@ -54,8 +54,8 @@ describe('SummaryController', () => {
           ds: 'http://semweb.mmlab.be/ns/datasummaries#',
           rdf: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
         },
-      } as any) as SummaryController & FakeController;
-      client = request.agent(DummyServer(controller as any));
+      }) as SummaryController & FakeController;
+      client = request.agent(DummyServer(controller));
     });
 
     it('should correctly serve summary in Turtle', () => new Promise<void>((done) => {

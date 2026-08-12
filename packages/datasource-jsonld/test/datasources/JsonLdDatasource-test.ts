@@ -4,6 +4,7 @@ import { JsonLdDatasource } from '@ldf/datasource-jsonld/lib/datasources';
 import { Datasource } from '@ldf/core/lib/datasources';
 import * as path from 'path';
 import * as N3 from 'n3';
+import type { Query } from '@ldf/core';
 
 const dataFactory = N3.DataFactory;
 
@@ -93,12 +94,12 @@ describe('JsonLdDatasource', () => {
   });
 });
 
-function itShouldExecute(datasource: JsonLdDatasource, name: string, query: any, expectedResultsCount: number, expectedTotalCount: number) {
+function itShouldExecute(datasource: JsonLdDatasource, name: string, query: Query, expectedResultsCount: number, expectedTotalCount: number) {
   describe('executing ' + name, () => {
     let resultsCount = 0, totalCount: number;
     beforeAll(() => new Promise<void>((done) => {
       let result = datasource.select(query);
-      result.getProperty('metadata', (metadata: any) => { totalCount = metadata.totalCount; });
+      result.getProperty<{ totalCount: number }>('metadata', (metadata) => { totalCount = metadata.totalCount; });
       result.on('data', () => { resultsCount++; });
       result.on('end', done);
     }));

@@ -2,12 +2,13 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { NotFoundController } from '@ldf/core/lib/controllers';
 import * as request from 'supertest';
-import { DummyServer, type DummyController } from '../../../../test/DummyServer';
+import { DummyServer } from '../../../../test/DummyServer';
+import type { DummyController } from '../../../../test/DummyServer';
+import type { SinonSpyLike } from '../../../../test/sinon-types';
+import type { Datasource } from '@ldf/core/lib/datasources/Datasource';
 import { NotFoundHtmlView, NotFoundRdfView } from '@ldf/core/lib/views/notfound';
 import { DataFactory as dataFactory } from 'n3';
 import { sinon } from '../../../../test/sinon';
-import type { SinonSpyLike } from '../../../../test/sinon-types';
-import type * as supertestModule from 'supertest';
 
 type SpiedController = NotFoundController & DummyController & { next: SinonSpyLike };
 type SpiedView<T> = T & { render: SinonSpyLike };
@@ -31,11 +32,10 @@ describe('NotFoundController', () => {
     });
 
     describe('receiving a request', () => {
-      let response: supertestModule.Response;
-      beforeAll(() => new Promise<void>((resolve, reject) => {
-        void client.get('/notfound')
-          .end((error, res) => { response = res; error ? reject(error) : resolve(); });
-      }));
+      let response: request.Response;
+      beforeAll(async () => {
+        response = await client.get('/notfound');
+      });
 
       it('should not hand over to the next controller', () => {
         expect(controller.next.called).toBe(false);
@@ -66,8 +66,8 @@ describe('NotFoundController', () => {
       rdfView = new NotFoundRdfView({ dataFactory }) as SpiedView<NotFoundRdfView>;
       sinon.spy(htmlView, 'render');
       sinon.spy(rdfView, 'render');
-      let datasources = { a: { title: 'foo', url: 'http://example.org/foo#dataset' } };
-      controller = new NotFoundController({ views: [htmlView, rdfView], datasources } as any) as SpiedController;
+      let datasources = { a: { title: 'foo', url: 'http://example.org/foo#dataset' } as unknown as Datasource };
+      controller = new NotFoundController({ views: [htmlView, rdfView], datasources }) as SpiedController;
       client = request.agent(DummyServer(controller));
     });
     function resetAll() {
@@ -83,12 +83,11 @@ describe('NotFoundController', () => {
     // the qejs/HtmlView rendering path, not something this conversion caused.
     // Not fixed here (out of scope — mechanical framework conversion only).
     describe.skip('receiving a request without Accept header', () => {
-      let response: supertestModule.Response;
-      beforeAll(() => new Promise<void>((resolve, reject) => {
+      let response: request.Response;
+      beforeAll(async () => {
         resetAll();
-        void client.get('/notfound')
-          .end((error, res) => { response = res; error ? reject(error) : resolve(); });
-      }));
+        response = await client.get('/notfound');
+      });
 
       it('should not hand over to the next controller', () => {
         expect(controller.next.called).toBe(false);
@@ -120,12 +119,11 @@ describe('NotFoundController', () => {
     });
 
     describe.skip('receiving a request with an Accept header of */*', () => {
-      let response: supertestModule.Response;
-      beforeAll(() => new Promise<void>((resolve, reject) => {
+      let response: request.Response;
+      beforeAll(async () => {
         resetAll();
-        void client.get('/notfound').set('Accept', '*/*')
-          .end((error, res) => { response = res; error ? reject(error) : resolve(); });
-      }));
+        response = await client.get('/notfound').set('Accept', '*/*');
+      });
 
       it('should not hand over to the next controller', () => {
         expect(controller.next.called).toBe(false);
@@ -157,12 +155,11 @@ describe('NotFoundController', () => {
     });
 
     describe.skip('receiving a request with an Accept header of text/html', () => {
-      let response: supertestModule.Response;
-      beforeAll(() => new Promise<void>((resolve, reject) => {
+      let response: request.Response;
+      beforeAll(async () => {
         resetAll();
-        void client.get('/notfound').set('Accept', 'text/html')
-          .end((error, res) => { response = res; error ? reject(error) : resolve(); });
-      }));
+        response = await client.get('/notfound').set('Accept', 'text/html');
+      });
 
       it('should not hand over to the next controller', () => {
         expect(controller.next.called).toBe(false);
@@ -194,12 +191,11 @@ describe('NotFoundController', () => {
     });
 
     describe('receiving a request with an Accept header of text/turtle', () => {
-      let response: supertestModule.Response;
-      beforeAll(() => new Promise<void>((resolve, reject) => {
+      let response: request.Response;
+      beforeAll(async () => {
         resetAll();
-        void client.get('/notfound').set('Accept', 'text/turtle')
-          .end((error, res) => { response = res; error ? reject(error) : resolve(); });
-      }));
+        response = await client.get('/notfound').set('Accept', 'text/turtle');
+      });
 
       it('should not hand over to the next controller', () => {
         expect(controller.next.called).toBe(false);
@@ -232,12 +228,11 @@ describe('NotFoundController', () => {
     });
 
     describe('receiving a request with an Accept header of application/trig', () => {
-      let response: supertestModule.Response;
-      beforeAll(() => new Promise<void>((resolve, reject) => {
+      let response: request.Response;
+      beforeAll(async () => {
         resetAll();
-        void client.get('/notfound').set('Accept', 'application/trig')
-          .end((error, res) => { response = res; error ? reject(error) : resolve(); });
-      }));
+        response = await client.get('/notfound').set('Accept', 'application/trig');
+      });
 
       it('should not hand over to the next controller', () => {
         expect(controller.next.called).toBe(false);

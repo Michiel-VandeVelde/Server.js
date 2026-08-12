@@ -1,20 +1,15 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect, beforeAll } from 'vitest';
-// The class is actually named `DeferenceController` in the library source
-// (pre-existing typo, preserved as-is); the controllers barrel re-exports
-// it under the corrected name.
 import { DereferenceController } from '@ldf/core/lib/controllers';
 import * as request from 'supertest';
-import { DummyServer, type DummyController } from '../../../../test/DummyServer';
+import { DummyServer } from '../../../../test/DummyServer';
+import type { DummyController } from '../../../../test/DummyServer';
 import type { SinonSpyLike } from '../../../../test/sinon-types';
-import type * as supertestModule from 'supertest';
+import type { Datasource } from '@ldf/core/lib/datasources/Datasource';
 import type { ClientRequest } from 'http';
-import type { Datasource } from '@ldf/core/lib/datasources';
 
 type SpiedController = DereferenceController & DummyController & { next: SinonSpyLike };
-// supertest's Response type doesn't declare `.req` (the underlying raw
-// http.ClientRequest), though it exists at runtime.
-type ResponseWithReq = supertestModule.Response & { req: ClientRequest };
+type ResponseWithReq = request.Response & { req: ClientRequest };
 
 describe('DereferenceController', () => {
   describe('The DereferenceController module', () => {
@@ -30,16 +25,17 @@ describe('DereferenceController', () => {
   describe('A DereferenceController instance', () => {
     let controller: SpiedController, client: request.Agent;
     beforeAll(() => {
-      controller = new DereferenceController({ dereference: { '/resource/': { path: 'dbpedia/2014' } as Datasource } }) as SpiedController;
+      controller = new DereferenceController({
+        dereference: { '/resource/': { path: 'dbpedia/2014' } as unknown as Datasource },
+      }) as SpiedController;
       client = request.agent(DummyServer(controller));
     });
 
     describe('receiving a request for a dereferenced URL', () => {
-      let response: supertestModule.Response;
-      beforeAll(() => new Promise<void>((resolve, reject) => {
-        void client.get('/resource/Mickey_Mouse')
-          .end((error, res) => { response = res; error ? reject(error) : resolve(); });
-      }));
+      let response: ResponseWithReq;
+      beforeAll(async () => {
+        response = await client.get('/resource/Mickey_Mouse') as ResponseWithReq;
+      });
 
       it('should not hand over to the next controller', () => {
         expect(controller.next.called).toBe(false);
@@ -54,7 +50,7 @@ describe('DereferenceController', () => {
       });
 
       it('should set the Location header correctly', () => {
-        let hostname = (response as ResponseWithReq).req.getHeader('Host') as string,
+        let hostname = response.req.getHeader('Host') as string,
             entityUrl = encodeURIComponent('http://' + hostname + '/resource/Mickey_Mouse'),
             expectedLocation = 'http://' + hostname + '/dbpedia/2014?subject=' + entityUrl;
 
@@ -62,7 +58,7 @@ describe('DereferenceController', () => {
       });
 
       it('should mention the desired location in the body', () => {
-        let hostname = (response as ResponseWithReq).req.getHeader('Host') as string,
+        let hostname = response.req.getHeader('Host') as string,
             entityUrl = encodeURIComponent('http://' + hostname + '/resource/Mickey_Mouse'),
             expectedLocation = 'http://' + hostname + '/dbpedia/2014?subject=' + entityUrl;
 
@@ -71,9 +67,7 @@ describe('DereferenceController', () => {
     });
 
     describe('receiving a request for a non-defererenced URL', () => {
-      beforeAll(() => new Promise<void>((resolve, reject) => {
-        void client.get('/otherresource/Mickey_Mouse').end((err) => err ? reject(err) : resolve());
-      }));
+      beforeAll(() => client.get('/otherresource/Mickey_Mouse'));
 
       it('should hand over to the next controller', () => {
         expect(controller.next.calledOnce).toBe(true);

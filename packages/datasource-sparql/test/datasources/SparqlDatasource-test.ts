@@ -19,7 +19,7 @@ const dataFactory = DataFactory;
 interface RequestStub extends SinonStubLike {
   onFirstCall(): SinonStubLike;
   onSecondCall(): SinonStubLike;
-  returnValues: any[];
+  returnValues: ReturnType<typeof createHttpResponse>[];
   firstCall: SinonSpyCall;
   secondCall: SinonSpyCall;
   getCall(n: number): SinonSpyCall & { callArgWith(index: number, ...args: any[]): void };

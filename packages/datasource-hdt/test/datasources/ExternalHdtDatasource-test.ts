@@ -6,6 +6,7 @@ import * as path from 'path';
 import * as N3 from 'n3';
 import { EventEmitter } from 'events';
 import { spawn } from 'child_process';
+import type { ChildProcess } from 'child_process';
 import { existsSync } from 'fs';
 
 const dataFactory = N3.DataFactory;
@@ -43,10 +44,10 @@ let exampleHdtFile = path.join(__dirname, '../../../../test/assets/test.hdt');
 
 // Creates a fake child process exposing just enough of the `child_process.ChildProcess`
 // API for ExternalHdtDatasource's `_executeQuery`: a `stdout` stream to push data through.
-function fakeHdtProcess(): any {
-  let proc: any = new EventEmitter();
-  proc.stdout = new EventEmitter();
-  proc.stdout.setEncoding = () => {};
+type FakeHdtProcess = EventEmitter & { stdout: EventEmitter & { setEncoding: (encoding: string) => void } };
+function fakeHdtProcess(): FakeHdtProcess {
+  let proc = new EventEmitter() as FakeHdtProcess;
+  proc.stdout = Object.assign(new EventEmitter(), { setEncoding: () => {} });
   return proc;
 }
 
@@ -73,7 +74,7 @@ describe('ExternalHdtDatasource', () => {
     it('should not throw when constructed without options', () => {
       expect(() => {
         // eslint-disable-next-line no-new
-        new (ExternalHdtDatasource as any)();
+        new (ExternalHdtDatasource as unknown as new () => ExternalHdtDatasource)();
       }).not.toThrow();
     });
   });
@@ -105,11 +106,11 @@ describe('ExternalHdtDatasource', () => {
   describe('_executeQuery with a stubbed hdt process', () => {
     it('should emit an error when the hdt utility outputs invalid query results', () => new Promise<void>((done) => {
       let proc = fakeHdtProcess();
-      vi.mocked(spawn).mockReturnValueOnce(proc);
-      let instance = new ExternalHdtDatasource({ dataFactory, file: exampleHdtFile, checkFile: false } as any);
+      vi.mocked(spawn).mockReturnValueOnce(proc as unknown as ChildProcess);
+      let instance = new ExternalHdtDatasource({ dataFactory, file: exampleHdtFile, checkFile: false });
       instance.initialize();
       instance.on('initialized', () => {
-        let result = instance.select({ features: { triplePattern: true } } as any);
+        let result = instance.select({ features: { triplePattern: true } });
         result.on('error', (error: Error) => {
           expect(error.message).toContain('Invalid query result');
           done();
@@ -121,13 +122,13 @@ describe('ExternalHdtDatasource', () => {
 
     it('should round the estimated total count up when the header undercounts the offset and page', () => new Promise<void>((done) => {
       let proc = fakeHdtProcess();
-      vi.mocked(spawn).mockReturnValueOnce(proc);
-      let instance = new ExternalHdtDatasource({ dataFactory, file: exampleHdtFile, checkFile: false } as any);
+      vi.mocked(spawn).mockReturnValueOnce(proc as unknown as ChildProcess);
+      let instance = new ExternalHdtDatasource({ dataFactory, file: exampleHdtFile, checkFile: false });
       instance.initialize();
       instance.on('initialized', () => {
-        let result = instance.select({ offset: 0, limit: 10, features: { triplePattern: true, offset: true, limit: true } } as any);
+        let result = instance.select({ offset: 0, limit: 10, features: { triplePattern: true, offset: true, limit: true } });
         let resultsCount = 0, totalCount: number;
-        result.getProperty('metadata', (metadata: any) => { totalCount = metadata.totalCount; });
+        result.getProperty<{ totalCount: number }>('metadata', (metadata) => { totalCount = metadata.totalCount; });
         result.on('data', () => { resultsCount++; });
         result.on('end', () => {
           expect(resultsCount).toBe(2);
@@ -144,13 +145,13 @@ describe('ExternalHdtDatasource', () => {
 
     it('should double the returned triple count when it fills the whole page', () => new Promise<void>((done) => {
       let proc = fakeHdtProcess();
-      vi.mocked(spawn).mockReturnValueOnce(proc);
-      let instance = new ExternalHdtDatasource({ dataFactory, file: exampleHdtFile, checkFile: false } as any);
+      vi.mocked(spawn).mockReturnValueOnce(proc as unknown as ChildProcess);
+      let instance = new ExternalHdtDatasource({ dataFactory, file: exampleHdtFile, checkFile: false });
       instance.initialize();
       instance.on('initialized', () => {
-        let result = instance.select({ offset: 0, limit: 1, features: { triplePattern: true, offset: true, limit: true } } as any);
+        let result = instance.select({ offset: 0, limit: 1, features: { triplePattern: true, offset: true, limit: true } });
         let totalCount: number;
-        result.getProperty('metadata', (metadata: any) => { totalCount = metadata.totalCount; });
+        result.getProperty<{ totalCount: number }>('metadata', (metadata) => { totalCount = metadata.totalCount; });
         result.on('data', () => {});
         result.on('end', () => {
           expect(totalCount).toBe(4);
@@ -166,11 +167,11 @@ describe('ExternalHdtDatasource', () => {
 
     it('should emit an error when the hdt utility process exits with a non-zero code', () => new Promise<void>((done) => {
       let proc = fakeHdtProcess();
-      vi.mocked(spawn).mockReturnValueOnce(proc);
-      let instance = new ExternalHdtDatasource({ dataFactory, file: exampleHdtFile, checkFile: false } as any);
+      vi.mocked(spawn).mockReturnValueOnce(proc as unknown as ChildProcess);
+      let instance = new ExternalHdtDatasource({ dataFactory, file: exampleHdtFile, checkFile: false });
       instance.initialize();
       instance.on('initialized', () => {
-        let result = instance.select({ features: { triplePattern: true } } as any);
+        let result = instance.select({ features: { triplePattern: true } });
         result.on('error', (error: Error) => {
           expect(error.message).toContain('Could not query');
           done();
@@ -182,7 +183,7 @@ describe('ExternalHdtDatasource', () => {
 
   describe('created for a non-existing file with checkFile disabled', () => {
     it('should initialize without checking the file', () => new Promise<void>((done) => {
-      let instance = new ExternalHdtDatasource({ dataFactory, file: '/no/such/file.hdt', checkFile: false } as any);
+      let instance = new ExternalHdtDatasource({ dataFactory, file: '/no/such/file.hdt', checkFile: false });
       instance.initialize();
       instance.on('initialized', done);
     }));
@@ -202,8 +203,8 @@ describe('ExternalHdtDatasource', () => {
     describe('executing the empty query', () => {
       let resultsCount = 0, totalCount: number;
       beforeAll(() => new Promise<void>((done) => {
-        let result = datasource.select({ features: { triplePattern: true } } as any);
-        result.getProperty('metadata', (metadata: any) => { totalCount = metadata.totalCount; });
+        let result = datasource.select({ features: { triplePattern: true } });
+        result.getProperty<{ totalCount: number }>('metadata', (metadata) => { totalCount = metadata.totalCount; });
         result.on('data', () => { resultsCount++; });
         result.on('end', done);
       }));
@@ -220,7 +221,7 @@ describe('ExternalHdtDatasource', () => {
     describe('executing the empty query with an offset and limit', () => {
       let resultsCount = 0;
       beforeAll(() => new Promise<void>((done) => {
-        let result = datasource.select({ offset: 10, limit: 10, features: { triplePattern: true, offset: true, limit: true } } as any);
+        let result = datasource.select({ offset: 10, limit: 10, features: { triplePattern: true, offset: true, limit: true } });
         result.on('data', () => { resultsCount++; });
         result.on('end', done);
       }));
@@ -233,8 +234,8 @@ describe('ExternalHdtDatasource', () => {
     describe('executing a query for a non-default graph', () => {
       let resultsCount = 0, totalCount: number;
       beforeAll(() => new Promise<void>((done) => {
-        let result = datasource.select({ graph: dataFactory.namedNode('g'), features: { quadPattern: true } } as any);
-        result.getProperty('metadata', (metadata: any) => { totalCount = metadata.totalCount; });
+        let result = datasource.select({ graph: dataFactory.namedNode('g'), features: { quadPattern: true } });
+        result.getProperty<{ totalCount: number }>('metadata', (metadata) => { totalCount = metadata.totalCount; });
         result.on('data', () => { resultsCount++; });
         result.on('end', done);
       }));
@@ -255,7 +256,7 @@ describe('ExternalHdtDatasource', () => {
         let result = datasource.select({
           subject: dataFactory.namedNode('http://example.org/s1'),
           features: { triplePattern: true },
-        } as any);
+        });
         result.on('data', () => { resultsCount++; });
         result.on('end', done);
       }));

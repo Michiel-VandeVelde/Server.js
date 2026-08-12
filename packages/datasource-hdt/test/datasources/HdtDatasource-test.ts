@@ -6,9 +6,20 @@ import { UrlData } from '@ldf/core/lib/UrlData';
 import * as path from 'path';
 import * as N3 from 'n3';
 import * as RdfString from 'rdf-string';
+import * as hdt from 'hdt';
 import { sinon } from '../../../../test/sinon';
+import type { Quad } from 'rdf-js';
+import type { Pushable, Query } from '@ldf/core';
+import type { IStringQuad } from 'rdf-string';
 
 const dataFactory = N3.DataFactory;
+
+class TestableHdtDatasource extends HdtDatasource {
+  setHdtDocument(doc: hdt.Document) { this._hdtDocument = doc; }
+  callExecuteQuery(query: Query, destination: Pushable<Quad>) {
+    return this._executeQuery(query, destination);
+  }
+}
 
 let exampleHdtFile = path.join(__dirname, '../../../../test/assets/test.hdt');
 let exampleHdtFileWithBlanks = path.join(__dirname, '../../../../test/assets/test-blank.hdt');
@@ -36,12 +47,12 @@ describe('HdtDatasource', () => {
     it('should not throw when constructed without options', () => {
       expect(() => {
         // eslint-disable-next-line no-new
-        new (HdtDatasource as any)();
+        new (HdtDatasource as unknown as new () => HdtDatasource)();
       }).not.toThrow();
     });
 
     it('should return an ExternalHdtDatasource when the external option is set', () => {
-      expect(new HdtDatasource({ dataFactory, file: exampleHdtFile, external: true } as any))
+      expect(new HdtDatasource({ dataFactory, file: exampleHdtFile, external: true }))
         .toBeInstanceOf(ExternalHdtDatasource);
     });
 
@@ -59,47 +70,49 @@ describe('HdtDatasource', () => {
 
   describe('_executeQuery', () => {
     it('should round the estimated total count up when it underestimates the offset and page', () => new Promise<void>((done) => {
-      let instance: any = new HdtDatasource({ dataFactory, file: exampleHdtFile });
-      instance._hdtDocument = {
-        searchTriples: () => Promise.resolve({ triples: [{}, {}], totalCount: 5, hasExactCount: false }),
-      };
+      let instance = new TestableHdtDatasource({ dataFactory, file: exampleHdtFile });
+      instance.setHdtDocument({
+        searchTriples: () => Promise.resolve({ triples: [{}, {}] as unknown as Quad[], totalCount: 5, hasExactCount: false }),
+      } as unknown as hdt.Document);
+      let setProperty = sinon.spy();
       let destination = {
-        setProperty: sinon.spy(),
+        setProperty,
         _push: sinon.spy(),
         close: () => {
-          expect(destination.setProperty.calledWith('metadata', { totalCount: 6, hasExactCount: false })).toBe(true);
+          expect(setProperty.calledWith('metadata', { totalCount: 6, hasExactCount: false })).toBe(true);
           done();
         },
-      };
-      instance._executeQuery({ offset: 4, limit: 10 }, destination);
+      } as unknown as Pushable<Quad>;
+      instance.callExecuteQuery({ offset: 4, limit: 10 }, destination);
     }));
 
     it('should double the returned triple count when it fills the whole page', () => new Promise<void>((done) => {
-      let instance: any = new HdtDatasource({ dataFactory, file: exampleHdtFile });
-      instance._hdtDocument = {
-        searchTriples: () => Promise.resolve({ triples: [{}, {}], totalCount: 1, hasExactCount: false }),
-      };
+      let instance = new TestableHdtDatasource({ dataFactory, file: exampleHdtFile });
+      instance.setHdtDocument({
+        searchTriples: () => Promise.resolve({ triples: [{}, {}] as unknown as Quad[], totalCount: 1, hasExactCount: false }),
+      } as unknown as hdt.Document);
+      let setProperty = sinon.spy();
       let destination = {
-        setProperty: sinon.spy(),
+        setProperty,
         _push: sinon.spy(),
         close: () => {
-          expect(destination.setProperty.calledWith('metadata', { totalCount: 8, hasExactCount: false })).toBe(true);
+          expect(setProperty.calledWith('metadata', { totalCount: 8, hasExactCount: false })).toBe(true);
           done();
         },
-      };
-      instance._executeQuery({ offset: 4, limit: 1 }, destination);
+      } as unknown as Pushable<Quad>;
+      instance.callExecuteQuery({ offset: 4, limit: 1 }, destination);
     }));
 
     it('should emit an error when the underlying HDT search fails', () => new Promise<void>((done) => {
-      let instance: any = new HdtDatasource({ dataFactory, file: exampleHdtFile });
+      let instance = new TestableHdtDatasource({ dataFactory, file: exampleHdtFile });
       let error = new Error('search failed');
-      instance._hdtDocument = { searchTriples: () => Promise.reject(error) };
+      instance.setHdtDocument({ searchTriples: () => Promise.reject(error) } as unknown as hdt.Document);
       let destination = { setProperty: () => {}, emit: (event: string, err: Error) => {
         expect(event).toBe('error');
         expect(err).toBe(error);
         done();
-      } };
-      instance._executeQuery({}, destination);
+      } } as unknown as Pushable<Quad>;
+      instance.callExecuteQuery({}, destination);
     }));
   });
 
@@ -223,7 +236,7 @@ describe('HdtDatasource', () => {
         dataFactory,
         file: exampleHdtFileWithBlanks,
         urlData: new UrlData({ baseURL: 'http://example.org/' }),
-      } as any);
+      });
       datasource.initialize();
       datasource.on('initialized', done);
     }));
@@ -269,14 +282,14 @@ describe('HdtDatasource', () => {
   });
 });
 
-function itShouldExecute(getDatasource: () => HdtDatasource, name: string, query: any,
-  expectedResultsCount: number, expectedTotalCount: number, expectedTriples?: any[]) {
+function itShouldExecute(getDatasource: () => HdtDatasource, name: string, query: Query,
+  expectedResultsCount: number, expectedTotalCount: number, expectedTriples?: IStringQuad[]) {
   describe('executing ' + name, () => {
-    let resultsCount = 0, totalCount: number, triples: any[] = [];
+    let resultsCount = 0, totalCount: number, triples: Quad[] = [];
     beforeAll(() => new Promise<void>((done) => {
       let result = getDatasource().select(query);
-      result.getProperty('metadata', (metadata: any) => { totalCount = metadata.totalCount; });
-      result.on('data', (triple: any) => { resultsCount++; expectedTriples && triples.push(triple); });
+      result.getProperty<{ totalCount: number }>('metadata', (metadata) => { totalCount = metadata.totalCount; });
+      result.on('data', (triple: Quad) => { resultsCount++; expectedTriples && triples.push(triple); });
       result.on('end', done);
     }));
 

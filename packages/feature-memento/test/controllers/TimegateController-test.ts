@@ -4,6 +4,15 @@ import { TimegateController } from '@ldf/feature-memento/lib/controllers';
 import { Controller } from '@ldf/core/lib/controllers';
 import { UrlData } from '@ldf/core/lib/UrlData';
 import { DummyServer } from '../../../../test/DummyServer';
+import type { ParsedTimemapEntry } from '@ldf/feature-memento/lib/controllers/TimegateController';
+import type { Datasource } from '@ldf/core/lib/datasources/Datasource';
+
+class TestableTimegateController extends TimegateController {
+  get testTimegatePath() { return this._timegatePath; }
+  callGetClosestMemento(timemap: ParsedTimemapEntry[], acceptDatetime: string | Date | number, unsorted?: boolean) {
+    return this._getClosestMemento(timemap, acceptDatetime, unsorted);
+  }
+}
 
 interface SupertestResponse {
   statusCode: number;
@@ -51,11 +60,11 @@ describe('TimegateController', () => {
     });
 
     it('should use /timegate/ as the default timegate path', () => {
-      expect((new TimegateController() as any)._timegatePath).toBe('/timegate/');
+      expect(new TestableTimegateController().testTimegatePath).toBe('/timegate/');
     });
 
     it('should use the configured timegate path', () => {
-      expect((new TimegateController({ timegates: { baseUrl: '/versions/' } }) as any)._timegatePath).toBe('/versions/');
+      expect(new TestableTimegateController({ timegates: { baseUrl: '/versions/' } }).testTimegatePath).toBe('/versions/');
     });
   });
 
@@ -67,7 +76,7 @@ describe('TimegateController', () => {
     it('should convert a single memento config into a sorted timemap entry', () => {
       let datasource: FakeDatasource = { id: 'ds1', path: '/ds1/' };
       let map = TimegateController.parseTimegateMap({
-        resource: [{ datasource: datasource as any, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z' }],
+        resource: [{ datasource: datasource as unknown as Datasource, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z' }],
       });
       expect(map.resource).toHaveLength(1);
       expect(map.resource[0].datasourceId).toBe('ds1');
@@ -79,8 +88,8 @@ describe('TimegateController', () => {
       let ds1: FakeDatasource = { id: 'ds1', path: '/ds1/' }, ds2: FakeDatasource = { id: 'ds2', path: '/ds2/' };
       let map = TimegateController.parseTimegateMap({
         resource: [
-          { datasource: ds2 as any, initial: '2021-01-01T00:00:00Z', final: '2021-06-01T00:00:00Z' },
-          { datasource: ds1 as any, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z' },
+          { datasource: ds2 as unknown as Datasource, initial: '2021-01-01T00:00:00Z', final: '2021-06-01T00:00:00Z' },
+          { datasource: ds1 as unknown as Datasource, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z' },
         ],
       });
       expect(map.resource.map((entry) => entry.datasourceId)).toEqual(['ds1', 'ds2']);
@@ -97,7 +106,7 @@ describe('TimegateController', () => {
     it('should key entries by their datasource id', () => {
       let datasource: FakeDatasource = { id: 'ds1', path: '/ds1/' };
       let inverted = TimegateController.parseInvertedTimegateMap({
-        resource: [{ datasource: datasource as any, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z' }],
+        resource: [{ datasource: datasource as unknown as Datasource, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z' }],
       }, urlData);
       expect(Object.keys(inverted)).toEqual(['ds1']);
       expect(inverted.ds1.memento).toBe('resource');
@@ -109,7 +118,7 @@ describe('TimegateController', () => {
     it('should key entries with a missing datasource id under the string "undefined"', () => {
       let datasource = { path: '/ds1/' };
       let inverted = TimegateController.parseInvertedTimegateMap({
-        resource: [{ datasource: datasource as any, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z' }],
+        resource: [{ datasource: datasource as unknown as Datasource, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z' }],
       }, urlData);
       expect(Object.keys(inverted)).toEqual(['undefined']);
     });
@@ -117,7 +126,7 @@ describe('TimegateController', () => {
     it('should fall back to the base URL and timegate id when no original URL is configured', () => {
       let datasource: FakeDatasource = { id: 'ds1', path: '/ds1/' };
       let inverted = TimegateController.parseInvertedTimegateMap({
-        resource: [{ datasource: datasource as any, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z' }],
+        resource: [{ datasource: datasource as unknown as Datasource, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z' }],
       }, urlData);
       expect(inverted.ds1.original).toBe('http://example.org/resource');
     });
@@ -125,7 +134,7 @@ describe('TimegateController', () => {
     it('should fall back to a bare / when the given urlData has no base URL', () => {
       let datasource: FakeDatasource = { id: 'ds1', path: '/ds1/' };
       let inverted = TimegateController.parseInvertedTimegateMap({
-        resource: [{ datasource: datasource as any, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z' }],
+        resource: [{ datasource: datasource as unknown as Datasource, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z' }],
       }, {} as InstanceType<typeof UrlData>);
       expect(inverted.ds1.original).toBe('/resource');
     });
@@ -134,7 +143,7 @@ describe('TimegateController', () => {
       let datasource: FakeDatasource = { id: 'ds1', path: '/ds1/' };
       let inverted = TimegateController.parseInvertedTimegateMap({
         resource: [{
-          datasource: datasource as any, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z',
+          datasource: datasource as unknown as Datasource, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z',
           originalBaseURL: 'http://original.example.org/',
         }],
       }, urlData);
@@ -143,9 +152,9 @@ describe('TimegateController', () => {
   });
 
   describe('_getClosestMemento', () => {
-    let controller = new TimegateController();
+    let controller = new TestableTimegateController();
     function entry(id: string, start: string, end: string) {
-      return { datasource: { id, path: '/' + id + '/' } as any, datasourceId: id, interval: [new Date(start), new Date(end)] as [Date, Date] };
+      return { datasource: { id, path: '/' + id + '/' } as unknown as Datasource, datasourceId: id, interval: [new Date(start), new Date(end)] as [Date, Date] };
     }
     let timemap = [
       entry('a', '2020-01-01T00:00:00Z', '2020-02-01T00:00:00Z'),
@@ -154,36 +163,36 @@ describe('TimegateController', () => {
     ];
 
     it('should return null for an empty timemap', () => {
-      expect((controller as any)._getClosestMemento([], new Date())).toBe(null);
+      expect(controller.callGetClosestMemento([], new Date())).toBe(null);
     });
 
     it('should return the first memento when the date is before it', () => {
-      expect((controller as any)._getClosestMemento(timemap, new Date('2019-01-01T00:00:00Z'))!.datasourceId).toBe('a');
+      expect(controller.callGetClosestMemento(timemap, new Date('2019-01-01T00:00:00Z'))!.datasourceId).toBe('a');
     });
 
     it('should return the last memento when the date is after it', () => {
-      expect((controller as any)._getClosestMemento(timemap, new Date('2021-01-01T00:00:00Z'))!.datasourceId).toBe('c');
+      expect(controller.callGetClosestMemento(timemap, new Date('2021-01-01T00:00:00Z'))!.datasourceId).toBe('c');
     });
 
     it('should return the memento whose interval contains the date', () => {
-      expect((controller as any)._getClosestMemento(timemap, new Date('2020-03-15T00:00:00Z'))!.datasourceId).toBe('b');
+      expect(controller.callGetClosestMemento(timemap, new Date('2020-03-15T00:00:00Z'))!.datasourceId).toBe('b');
     });
 
     it('should return the previous memento when the date falls in a gap between intervals', () => {
-      expect((controller as any)._getClosestMemento(timemap, new Date('2020-02-15T00:00:00Z'))!.datasourceId).toBe('a');
+      expect(controller.callGetClosestMemento(timemap, new Date('2020-02-15T00:00:00Z'))!.datasourceId).toBe('a');
     });
 
     it('should return null for an invalid accept-datetime', () => {
-      expect((controller as any)._getClosestMemento(timemap, 'not-a-date')).toBe(null);
+      expect(controller.callGetClosestMemento(timemap, 'not-a-date')).toBe(null);
     });
 
     it('should sort an unsorted timemap when told to', () => {
       let unsorted = [timemap[2], timemap[0], timemap[1]];
-      expect((controller as any)._getClosestMemento(unsorted, new Date('2020-03-15T00:00:00Z'), true)!.datasourceId).toBe('b');
+      expect(controller.callGetClosestMemento(unsorted, new Date('2020-03-15T00:00:00Z'), true)!.datasourceId).toBe('b');
     });
 
     it('should skip mementos with a non-finite interval when scanning for a match', () => {
-      let invalidEntry = { datasource: { id: 'invalid', path: '/invalid/' } as any, datasourceId: 'invalid', interval: [new Date('not-a-date'), new Date('not-a-date')] as [Date, Date] };
+      let invalidEntry = { datasource: { id: 'invalid', path: '/invalid/' } as unknown as Datasource, datasourceId: 'invalid', interval: [new Date('not-a-date'), new Date('not-a-date')] as [Date, Date] };
       let withInvalid = [
         entry('a', '2020-01-01T00:00:00Z', '2020-02-01T00:00:00Z'),
         invalidEntry,
@@ -192,15 +201,15 @@ describe('TimegateController', () => {
       ];
       // The invalid entry is skipped by the isFinite check, so it's never matched
       // directly — it only resurfaces as the "previous" entry once 'c' is reached.
-      expect((controller as any)._getClosestMemento(withInvalid, new Date('2020-03-15T00:00:00Z'))).toBe(invalidEntry);
+      expect(controller.callGetClosestMemento(withInvalid, new Date('2020-03-15T00:00:00Z'))).toBe(invalidEntry);
     });
 
     it('should return null when no memento in the timemap has a finite interval', () => {
       let allInvalid = [
-        { datasource: { id: 'x' } as any, datasourceId: 'x', interval: [new Date('not-a-date'), new Date('not-a-date')] as [Date, Date] },
-        { datasource: { id: 'y' } as any, datasourceId: 'y', interval: [new Date('not-a-date'), new Date('not-a-date')] as [Date, Date] },
+        { datasource: { id: 'x' } as unknown as Datasource, datasourceId: 'x', interval: [new Date('not-a-date'), new Date('not-a-date')] as [Date, Date] },
+        { datasource: { id: 'y' } as unknown as Datasource, datasourceId: 'y', interval: [new Date('not-a-date'), new Date('not-a-date')] as [Date, Date] },
       ];
-      expect((controller as any)._getClosestMemento(allInvalid, new Date('2020-03-15T00:00:00Z'))).toBe(null);
+      expect(controller.callGetClosestMemento(allInvalid, new Date('2020-03-15T00:00:00Z'))).toBe(null);
     });
   });
 
@@ -211,11 +220,11 @@ describe('TimegateController', () => {
       controller = new TimegateController({
         timegates: {
           mementos: {
-            resource: [{ datasource: datasource as any, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z' }],
+            resource: [{ datasource: datasource as unknown as Datasource, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z' }],
           },
         },
       }) as TimegateController & FakeController;
-      client = request.agent(DummyServer(controller as any));
+      client = request.agent(DummyServer(controller));
     });
 
     it('should hand over to the next controller for a non-timegate path', () => new Promise<void>((done) => {
@@ -255,7 +264,7 @@ describe('TimegateController', () => {
         emptyController = new TimegateController({
           timegates: { mementos: { resource: [] } },
         }) as TimegateController & FakeController;
-        emptyClient = request.agent(DummyServer(emptyController as any));
+        emptyClient = request.agent(DummyServer(emptyController));
       });
 
       it('should hand over to the next controller instead of redirecting', () => new Promise<void>((done) => {
@@ -274,13 +283,13 @@ describe('TimegateController', () => {
           timegates: {
             mementos: {
               resource: [{
-                datasource: datasource as any, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z',
+                datasource: datasource as unknown as Datasource, initial: '2020-01-01T00:00:00Z', final: '2020-06-01T00:00:00Z',
                 originalBaseURL: 'http://original.example.org/custom-path',
               }],
             },
           },
         });
-        customClient = request.agent(DummyServer(customController as any));
+        customClient = request.agent(DummyServer(customController));
       });
 
       it('should build the original link from the custom base URL', () => new Promise<void>((done) => {
