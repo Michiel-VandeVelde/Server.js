@@ -1,7 +1,7 @@
 /*! @license MIT ©2013-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect, beforeAll } from 'vitest';
-import { SparqlDatasource } from '../../lib/datasources/SparqlDatasource';
-import { Datasource } from '@ldf/core/lib/datasources/Datasource';
+import { SparqlDatasource } from '@ldf/datasource-sparql/lib/datasources';
+import { Datasource } from '@ldf/core/lib/datasources';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as URL from 'url';

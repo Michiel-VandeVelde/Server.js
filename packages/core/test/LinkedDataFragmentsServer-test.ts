@@ -1,7 +1,7 @@
 /*! @license MIT ©2013-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
-import { LinkedDataFragmentsServer } from '../lib/LinkedDataFragmentsServer';
-import { UrlData } from '../lib/UrlData';
+import { LinkedDataFragmentsServer } from '@ldf/core/lib/LinkedDataFragmentsServer';
+import { UrlData } from '@ldf/core/lib/UrlData';
 import * as request from 'supertest';
 import * as net from 'net';
 import * as path from 'path';

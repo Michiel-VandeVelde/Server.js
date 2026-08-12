@@ -1,7 +1,7 @@
 /*! @license MIT ©2014-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { JsonLdDatasource } from '../../lib/datasources/JsonLdDatasource';
-import { Datasource } from '@ldf/core/lib/datasources/Datasource';
+import { JsonLdDatasource } from '@ldf/datasource-jsonld/lib/datasources';
+import { Datasource } from '@ldf/core/lib/datasources';
 import * as path from 'path';
 import * as N3 from 'n3';
 

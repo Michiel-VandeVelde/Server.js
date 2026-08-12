@@ -1,6 +1,6 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect } from 'vitest';
-import { PageRouter } from '../../lib/routers/PageRouter';
+import { PageRouter } from '@ldf/core/lib/routers';
 import { extractQueryParams } from '../../../../test/test-helpers';
 
 type LooseQuery = Record<string, unknown>;

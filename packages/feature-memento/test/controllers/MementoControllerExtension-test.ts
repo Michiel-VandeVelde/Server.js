@@ -1,13 +1,11 @@
 /*! @license MIT ©2016 Miel Vander Sande, Ghent University - imec */
 import { describe, it, expect } from 'vitest';
-import { MementoControllerExtension } from '../../lib/controllers/MementoControllerExtension';
-import { Controller } from '@ldf/core/lib/controllers/Controller';
-import Core = require('@ldf/core');
+import { MementoControllerExtension } from '@ldf/feature-memento/lib/controllers';
+import { Controller } from '@ldf/core/lib/controllers';
+import { UrlData } from '@ldf/core/lib/UrlData';
 import * as url from 'url';
 import { sinon } from '../../../../test/sinon';
 import type { LdfRequest, LdfResponse } from '@ldf/core';
-
-const { UrlData } = Core;
 
 describe('MementoControllerExtension', () => {
   describe('The MementoControllerExtension module', () => {

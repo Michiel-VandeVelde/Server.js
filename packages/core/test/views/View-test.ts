@@ -1,6 +1,6 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect } from 'vitest';
-import { View } from '../../lib/views/View';
+import { View } from '@ldf/core/lib/views';
 import { resolve } from 'path';
 import { sinon } from '../../../../test/sinon';
 import type { LdfResponse } from '@ldf/core';

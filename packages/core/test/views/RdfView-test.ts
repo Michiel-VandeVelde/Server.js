@@ -1,7 +1,6 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect } from 'vitest';
-import { RdfView } from '../../lib/views/RdfView';
-import { View } from '../../lib/views/View';
+import { RdfView, View } from '@ldf/core/lib/views';
 import * as N3 from 'n3';
 import { PassThrough } from 'stream';
 import { sinon } from '../../../../test/sinon';

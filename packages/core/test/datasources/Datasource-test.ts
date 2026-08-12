@@ -1,6 +1,6 @@
 /*! @license MIT ©2013-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, beforeEach, beforeAll, expect } from 'vitest';
-import { Datasource } from '../../lib/datasources/Datasource';
+import { Datasource } from '@ldf/core/lib/datasources';
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as path from 'path';

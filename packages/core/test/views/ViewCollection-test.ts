@@ -1,7 +1,6 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect, beforeAll } from 'vitest';
-import { ViewCollection } from '../../lib/views/ViewCollection';
-import { View } from '../../lib/views/View';
+import { ViewCollection, View } from '@ldf/core/lib/views';
 import type { LdfRequest } from '@ldf/core';
 
 describe('ViewCollection', () => {

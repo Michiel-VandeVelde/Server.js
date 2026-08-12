@@ -1,7 +1,7 @@
 /*! @license MIT ©2014-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
-import { ExternalHdtDatasource } from '../../lib/datasources/ExternalHdtDatasource';
-import { Datasource } from '@ldf/core/lib/datasources/Datasource';
+import { ExternalHdtDatasource } from '@ldf/datasource-hdt/lib/datasources';
+import { Datasource } from '@ldf/core/lib/datasources';
 import * as path from 'path';
 import * as N3 from 'n3';
 import { EventEmitter } from 'events';

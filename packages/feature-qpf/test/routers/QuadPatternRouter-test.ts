@@ -1,6 +1,6 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect } from 'vitest';
-import { QuadPatternRouter } from '../../lib/routers/QuadPatternRouter';
+import { QuadPatternRouter } from '@ldf/feature-qpf/lib/routers';
 import { DataFactory as dataFactory } from 'n3';
 import { extractQueryParams } from '../../../../test/test-helpers';
 import type { Query } from '@ldf/core';

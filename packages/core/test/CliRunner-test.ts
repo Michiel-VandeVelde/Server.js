@@ -1,6 +1,6 @@
 /*! @license MIT ©2013-2017 Ruben Verborgh and Ruben Taelman, Ghent University - imec */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { runCli, runCustom } from '../lib/CliRunner';
+import { runCli, runCustom } from '@ldf/core/lib/CliRunner';
 import { ComponentsManager } from 'componentsjs';
 import { EventEmitter } from 'events';
 import { sinon } from '../../../test/sinon';

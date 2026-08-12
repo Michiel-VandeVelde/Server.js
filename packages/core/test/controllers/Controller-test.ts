@@ -1,7 +1,7 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect, beforeAll } from 'vitest';
-import { Controller } from '../../lib/controllers/Controller';
-import { UrlData } from '../../lib/UrlData';
+import { Controller } from '@ldf/core/lib/controllers';
+import { UrlData } from '@ldf/core/lib/UrlData';
 import * as http from 'http';
 import * as request from 'supertest';
 import { DummyServer, type DummyController } from '../../../../test/DummyServer';

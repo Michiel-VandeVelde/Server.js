@@ -1,7 +1,7 @@
 /*! @license MIT ©2014-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { RdfaDatasource } from '../../lib/datasources/RdfaDatasource';
-import { Datasource } from '@ldf/core/lib/datasources/Datasource';
+import { RdfaDatasource } from '@ldf/datasource-rdfa/lib/datasources';
+import { Datasource } from '@ldf/core/lib/datasources';
 import * as path from 'path';
 import { DataFactory } from 'n3';
 import type { Query } from '@ldf/core';

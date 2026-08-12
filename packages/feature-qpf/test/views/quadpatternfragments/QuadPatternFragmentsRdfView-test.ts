@@ -1,6 +1,6 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect, beforeAll } from 'vitest';
-import { QuadPatternFragmentsRdfView } from '../../../lib/views/quadpatternfragments/QuadPatternFragmentsRdfView';
+import { QuadPatternFragmentsRdfView } from '@ldf/feature-qpf/lib/views/quadpatternfragments';
 
 import * as _ from 'lodash';
 import * as fs from 'fs';

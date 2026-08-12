@@ -1,7 +1,7 @@
 /*! @license MIT ©2014-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { N3Datasource } from '../../lib/datasources/N3Datasource';
-import { Datasource } from '../../../core/lib/datasources/Datasource';
+import { N3Datasource } from '@ldf/datasource-n3/lib/datasources';
+import { Datasource } from '@ldf/core/lib/datasources';
 import * as path from 'path';
 import { DataFactory } from 'n3';
 import type { Query } from '@ldf/core';

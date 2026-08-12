@@ -1,14 +1,15 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect, beforeAll } from 'vitest';
-// The exported class is actually named `DeferenceController` (pre-existing
-// typo in the library source, preserved as-is) — aliased here for readability.
-import { DeferenceController as DereferenceController } from '../../lib/controllers/DereferenceController';
+// The class is actually named `DeferenceController` in the library source
+// (pre-existing typo, preserved as-is); the controllers barrel re-exports
+// it under the corrected name.
+import { DereferenceController } from '@ldf/core/lib/controllers';
 import * as request from 'supertest';
 import { DummyServer, type DummyController } from '../../../../test/DummyServer';
 import type { SinonSpyLike } from '../../../../test/sinon-types';
 import type * as supertestModule from 'supertest';
 import type { ClientRequest } from 'http';
-import type { Datasource } from '../../lib/datasources/Datasource';
+import type { Datasource } from '@ldf/core/lib/datasources';
 
 type SpiedController = DereferenceController & DummyController & { next: SinonSpyLike };
 // supertest's Response type doesn't declare `.req` (the underlying raw

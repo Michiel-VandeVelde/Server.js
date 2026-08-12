@@ -1,12 +1,11 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect, beforeAll } from 'vitest';
-import { QuadPatternFragmentsController } from '../../lib/controllers/QuadPatternFragmentsController';
-import { QuadPatternFragmentsHtmlView } from '../../lib/views/quadpatternfragments/QuadPatternFragmentsHtmlView';
-import { QuadPatternFragmentsRdfView } from '../../lib/views/quadpatternfragments/QuadPatternFragmentsRdfView';
+import { QuadPatternFragmentsController } from '@ldf/feature-qpf/lib/controllers';
+import { QuadPatternFragmentsHtmlView, QuadPatternFragmentsRdfView } from '@ldf/feature-qpf/lib/views/quadpatternfragments';
 
 import * as request from 'supertest';
 import * as http from 'http';
-import { UrlData } from '@ldf/core';
+import { UrlData } from '@ldf/core/lib/UrlData';
 import * as N3 from 'n3';
 import { sinon } from '../../../../test/sinon';
 import { DummyServer, type DummyController } from '../../../../test/DummyServer';

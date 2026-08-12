@@ -1,8 +1,8 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect } from 'vitest';
-import { DatasourceRouter } from '../../lib/routers/DatasourceRouter';
+import { DatasourceRouter } from '@ldf/core/lib/routers';
 import { extractQueryParams } from '../../../../test/test-helpers';
-import type { UrlData } from '../../lib/UrlData';
+import type { UrlData } from '@ldf/core/lib/UrlData';
 type LooseQuery = Record<string, unknown>;
 
 describe('DatasourceRouter', () => {

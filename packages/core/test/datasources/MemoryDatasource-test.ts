@@ -1,7 +1,6 @@
 /*! @license MIT ©2014-2015 Ruben Verborgh and Ruben Taelman, Ghent University - imec */
 import { describe, it, expect } from 'vitest';
-import { MemoryDatasource } from '../../lib/datasources/MemoryDatasource';
-import { Datasource } from '../../lib/datasources/Datasource';
+import { MemoryDatasource, Datasource } from '@ldf/core/lib/datasources';
 import * as N3 from 'n3';
 import type { Quad } from 'rdf-js';
 

@@ -1,11 +1,9 @@
 /*! @license MIT ©2015-2016 Miel Vander Sande, Ghent University - imec */
 import { describe, it, expect, beforeAll } from 'vitest';
-import { TimegateController } from '../../lib/controllers/TimegateController';
-import { Controller } from '@ldf/core/lib/controllers/Controller';
-import Core = require('@ldf/core');
+import { TimegateController } from '@ldf/feature-memento/lib/controllers';
+import { Controller } from '@ldf/core/lib/controllers';
+import { UrlData } from '@ldf/core/lib/UrlData';
 import { DummyServer } from '../../../../test/DummyServer';
-
-const { UrlData } = Core;
 
 interface SupertestResponse {
   statusCode: number;

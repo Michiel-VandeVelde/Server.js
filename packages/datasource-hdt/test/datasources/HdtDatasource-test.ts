@@ -1,8 +1,7 @@
 /*! @license MIT ©2014-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { HdtDatasource } from '../../lib/datasources/HdtDatasource';
-import { Datasource } from '@ldf/core/lib/datasources/Datasource';
-import { ExternalHdtDatasource } from '../../lib/datasources/ExternalHdtDatasource';
+import { HdtDatasource, ExternalHdtDatasource } from '@ldf/datasource-hdt/lib/datasources';
+import { Datasource } from '@ldf/core/lib/datasources';
 import { UrlData } from '@ldf/core/lib/UrlData';
 import * as path from 'path';
 import * as N3 from 'n3';

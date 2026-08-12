@@ -1,9 +1,8 @@
 /*! @license MIT ©2016 Miel Vander Sande, Ghent University - imec */
 import { describe, it, expect } from 'vitest';
-import { WebIDControllerExtension } from '../../lib/controllers/WebIDControllerExtension';
-import { controllers, UrlData } from '@ldf/core';
-
-const { Controller } = controllers;
+import { WebIDControllerExtension } from '@ldf/feature-webid/lib/controllers';
+import { Controller } from '@ldf/core/lib/controllers';
+import { UrlData } from '@ldf/core/lib/UrlData';
 import { sinon } from '../../../../test/sinon';
 
 describe('WebIDControllerExtension', () => {

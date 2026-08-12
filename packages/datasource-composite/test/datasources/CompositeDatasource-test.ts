@@ -1,9 +1,9 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { CompositeDatasource } from '../../lib/datasources/CompositeDatasource';
-import { Datasource } from '@ldf/core/lib/datasources/Datasource';
-import { HdtDatasource } from '@ldf/datasource-hdt/lib/datasources/HdtDatasource';
-import { N3Datasource } from '@ldf/datasource-n3/lib/datasources/N3Datasource';
+import { CompositeDatasource } from '@ldf/datasource-composite/lib/datasources';
+import { Datasource } from '@ldf/core/lib/datasources';
+import { HdtDatasource } from '@ldf/datasource-hdt/lib/datasources';
+import { N3Datasource } from '@ldf/datasource-n3/lib/datasources';
 import * as path from 'path';
 import { EventEmitter } from 'events';
 import * as N3 from 'n3';

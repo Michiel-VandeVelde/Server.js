@@ -1,10 +1,9 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect, beforeAll } from 'vitest';
-import { NotFoundController } from '../../lib/controllers/NotFoundController';
+import { NotFoundController } from '@ldf/core/lib/controllers';
 import * as request from 'supertest';
 import { DummyServer, type DummyController } from '../../../../test/DummyServer';
-import { NotFoundHtmlView } from '../../lib/views/notfound/NotFoundHtmlView';
-import { NotFoundRdfView } from '../../lib/views/notfound/NotFoundRdfView';
+import { NotFoundHtmlView, NotFoundRdfView } from '@ldf/core/lib/views/notfound';
 import { DataFactory as dataFactory } from 'n3';
 import { sinon } from '../../../../test/sinon';
 import type { SinonSpyLike } from '../../../../test/sinon-types';

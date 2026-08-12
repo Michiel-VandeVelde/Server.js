@@ -1,10 +1,10 @@
 /*! @license MIT ©2015-2016 Ruben Verborgh, Ghent University - imec */
 import { describe, it, expect, beforeAll } from 'vitest';
-import { SummaryController } from '../../lib/controllers/SummaryController';
+import { SummaryController } from '@ldf/feature-summary/lib/controllers';
 import { DummyServer } from '../../../../test/DummyServer';
 import * as fs from 'fs';
 import * as path from 'path';
-import { SummaryRdfView } from '../../lib/views/summary/SummaryRdfView';
+import { SummaryRdfView } from '@ldf/feature-summary/lib/views/summary';
 import { DataFactory as dataFactory } from 'n3';
 
 interface SupertestResponse {
