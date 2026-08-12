@@ -1,0 +1,89 @@
+/*! @license MIT ©2016 Miel Vander Sande, Ghent University - imec */
+import { describe, it, expect } from 'vitest';
+import { WebIDControllerExtension } from '@ldf/feature-webid/lib/controllers';
+import { Controller } from '@ldf/core/lib/controllers';
+import { UrlData } from '@ldf/core/lib/UrlData';
+import { sinon } from '../../../../test/sinon';
+import type { LdfRequest, LdfResponse } from '@ldf/core';
+
+// ForbiddenOptions isn't exported by the lib module; this mirrors its shape
+// structurally so the wrapper below can be typed without reaching into
+// the lib's internals.
+interface FakeForbiddenOptions {
+  webID?: string;
+  reason?: string;
+}
+
+// Construction always throws (see below), so tests can't go through `new`;
+// this subclass only adds public wrappers reachable via Object.create.
+class TestableWebIDControllerExtension extends WebIDControllerExtension {
+  setProtocol(protocol: string) { this._protocol = protocol; }
+  callHandleRequest(request: LdfRequest, response: LdfResponse, next: (error?: Error) => void) {
+    return this._handleRequest(request, response, next);
+  }
+  callHandleNotAcceptable(request: LdfRequest, response: LdfResponse, options: ((error?: Error) => void) | FakeForbiddenOptions) {
+    return this._handleNotAcceptable(request, response, options);
+  }
+}
+
+describe('WebIDControllerExtension', () => {
+  describe('The WebIDControllerExtension module', () => {
+    it('should be a function', () => {
+      expect(typeof WebIDControllerExtension).toBe('function');
+    });
+
+    it('should be a Controller subclass', () => {
+      expect(WebIDControllerExtension.prototype instanceof Controller).toBe(true);
+    });
+  });
+
+  // lru-cache v5 (this package's pinned dependency) and n3's Parser are both
+  // classes, and this file calls both as plain functions; a pre-existing bug
+  // that makes the whole feature non-functional, preserved as-is by the TS
+  // conversion. The constructor and _verifyWebID both crash unconditionally
+  // on their first line before reaching any of their real logic, which is
+  // why only _handleRequest and _handleNotAcceptable are testable below.
+  // This test documents that current reality rather than the feature
+  // actually working, so it fails loudly if that ever changes.
+  describe('constructing an instance', () => {
+    it('throws, because lru-cache v5 cannot be invoked without `new`', () => {
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new WebIDControllerExtension({ urlData: new UrlData({ protocol: 'https' }) });
+      }).toThrow(/cannot be invoked without ['"]new['"]/);
+    });
+  });
+
+  // The methods below are tested by attaching them to a bare object rather
+  // than through `new`, since construction itself always throws (see above).
+  describe('_handleRequest', () => {
+    it('should call next without inspecting the request when the protocol is not https', () => {
+      let instance = Object.create(TestableWebIDControllerExtension.prototype) as TestableWebIDControllerExtension;
+      instance.setProtocol('http');
+      let next = sinon.spy();
+      instance.callHandleRequest({} as LdfRequest, {} as LdfResponse, next);
+      expect(next.calledOnce).toBe(true);
+      expect(next.calledWithExactly()).toBe(true);
+    });
+  });
+
+  describe('_handleNotAcceptable', () => {
+    function handle(options: FakeForbiddenOptions) {
+      let instance = Object.create(TestableWebIDControllerExtension.prototype) as TestableWebIDControllerExtension;
+      let written: string | undefined;
+      let response = { writeHead: sinon.spy(), end: (text: string) => { written = text; } } as unknown as LdfResponse;
+      instance.callHandleNotAcceptable({ url: '/foo' } as unknown as LdfRequest, response, options);
+      return written;
+    }
+
+    it('should report the WebID and reason from the options', () => {
+      expect(handle({ webID: 'http://example.org/#me', reason: 'no match' })).toBe(
+        'Access to /foo is not allowed, verification for WebID http://example.org/#me failed. Reason: no match');
+    });
+
+    it('should not fail when the WebID and reason are missing', () => {
+      expect(handle({})).toBe(
+        'Access to /foo is not allowed, verification for WebID  failed. Reason: ');
+    });
+  });
+});
