@@ -1,4 +1,7 @@
 /*! @license MIT ©2016 Miel Vander Sande, Ghent University - imec */
+
+import { describe, it, expect } from 'vitest';
+const sinon = require('sinon');
 let WebIDControllerExtension = require('../../lib/controllers/WebIDControllerExtension').WebIDControllerExtension; // changed to make tests pass, will be revised in follow up pr
 
 let Controller = require('@ldf/core').controllers.Controller,
@@ -7,11 +10,11 @@ let Controller = require('@ldf/core').controllers.Controller,
 describe('WebIDControllerExtension', () => {
   describe('The WebIDControllerExtension module', () => {
     it('should be a function', () => {
-      WebIDControllerExtension.should.be.a('function');
+      expect(typeof WebIDControllerExtension).toBe('function');
     });
 
     it('should be a Controller subclass', () => {
-      (WebIDControllerExtension.prototype instanceof Controller).should.be.true;
+      expect(WebIDControllerExtension.prototype instanceof Controller).toBe(true);
     });
   });
 
@@ -25,10 +28,10 @@ describe('WebIDControllerExtension', () => {
   // actually working, so it fails loudly if that ever changes.
   describe('constructing an instance', () => {
     it('throws, because lru-cache v5 cannot be invoked without `new`', () => {
-      (function () {
+      expect(() => {
         // eslint-disable-next-line no-new
         new WebIDControllerExtension({ urlData: new UrlData({ protocol: 'https' }) });
-      }).should.throw(TypeError, /cannot be invoked without ['"]new['"]/);
+      }).toThrow(/cannot be invoked without ['"]new['"]/);
     });
   });
 
@@ -40,8 +43,8 @@ describe('WebIDControllerExtension', () => {
       instance._protocol = 'http';
       let next = sinon.spy();
       instance._handleRequest({}, {}, next);
-      next.should.have.been.calledOnce;
-      next.should.have.been.calledWithExactly();
+      expect(next.calledOnce).toBe(true);
+      expect(next.calledWithExactly()).toBe(true);
     });
   });
 
@@ -55,12 +58,12 @@ describe('WebIDControllerExtension', () => {
     }
 
     it('should report the WebID and reason from the options', () => {
-      handle({ webID: 'http://example.org/#me', reason: 'no match' }).should.equal(
+      expect(handle({ webID: 'http://example.org/#me', reason: 'no match' })).toBe(
         'Access to /foo is not allowed, verification for WebID http://example.org/#me failed. Reason: no match');
     });
 
     it('should not fail when the WebID and reason are missing', () => {
-      handle({}).should.equal(
+      expect(handle({})).toBe(
         'Access to /foo is not allowed, verification for WebID  failed. Reason: ');
     });
   });
