@@ -1,0 +1,10 @@
+node_modules
+coverage
+.nyc_output
+
+# Compiled output for packages already converted to TypeScript
+packages/*/**/*.js
+packages/*/**/*.d.ts
+!packages/*/test/**
+!packages/preset-qpf/**/*.js
+!packages/server/**/*.js

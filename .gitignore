@@ -4,6 +4,7 @@ summaries
 *.log
 *.hdt.index*
 .nyc_output
+coverage
 
 # Ignore deployment configuration files, but keep defaults and examples
 config.json
@@ -14,3 +15,13 @@ config/*.json
 # Ignore dev environment files
 .idea
 .devcontainer
+
+# Compiled output for packages already converted to TypeScript
+packages/*/**/*.js
+packages/*/**/*.js.map
+packages/*/**/*.d.ts
+!packages/*/test/**
+!packages/preset-qpf/**/*.js
+!packages/preset-qpf/**/*.js.map
+!packages/server/**/*.js
+!packages/server/**/*.js.map
